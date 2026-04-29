@@ -1,0 +1,378 @@
+<!-- ═══════════════════════════════════════════════
+     NAV
+════════════════════════════════════════════════ -->
+<nav class="nav">
+  <div class="nav-logo">Golden Abodes · <span>Command Centre</span></div>
+  <div class="nav-sep"></div>
+  <button class="nav-view-btn active" onclick="showView('portfolio',this)">Portfolio</button>
+  <button class="nav-view-btn" onclick="showView('project',this)">Project</button>
+  <button class="nav-view-btn" onclick="showView('upload',this)">Data Upload</button>
+  <div class="nav-sep"></div>
+  <select class="nav-proj-sel" id="projSel" onchange="onProjChange(this.value)">
+    <option value="p1">Anantam Signature — E Building</option>
+    <option value="p2">GA Residences — Pimpri</option>
+    <option value="p3">GA Heights — Mumbai</option>
+    <option value="p4">GA Villas — Goa</option>
+  </select>
+  <select class="nav-proj-sel" id="bldSel" onchange="onBuildingChange(this.value)">
+    <option value="all">All buildings</option>
+    <option value="d">D Building</option>
+    <option value="e" selected>E Building</option>
+  </select>
+  <span class="nav-hint">Construction execution · Apr 2026</span>
+</nav>
+
+<!-- ═══════════════════════════════════════════════
+     VIEW 1 — PORTFOLIO ROLLUP
+════════════════════════════════════════════════ -->
+<div id="view-portfolio" class="view active">
+<div class="wrap">
+
+  <div class="topbar">
+    <div>
+      <div class="brand">Golden Abodes · <span>Portfolio Execution Overview</span></div>
+      <div class="sub"><span class="pulse"></span>4 active projects · 09 Apr 2026</div>
+    </div>
+    <div class="actions">
+      <button class="btn" onclick="exportCSV('portfolio')">↓ Export CSV</button>
+    </div>
+  </div>
+
+  <!-- Portfolio KPIs -->
+  <div class="sec">
+    <div class="sh"><span class="st">Portfolio execution pulse</span><span class="dtag">Live · 09 Apr 2026</span></div>
+    <div class="kg k6">
+      <div class="kc w"><div class="kl">Portfolio SPI</div><div class="kv">0.87</div><div class="km">Weighted avg across projects</div><span class="kp p-w">Below 1.0 target</span><div class="kb"><div class="kbf" style="width:87%;background:var(--A)"></div></div></div>
+      <div class="kc w"><div class="kl">Portfolio CPI ★</div><div class="kv">0.94</div><div class="km">Dummy — BOQ not loaded</div><span class="kp p-w">Overspend risk</span><div class="kb"><div class="kbf" style="width:94%;background:var(--A)"></div></div></div>
+      <div class="kc w"><div class="kl">Avg completion</div><div class="kv">42<small style="font-size:13px;color:var(--t4)">%</small></div><div class="km">Weighted by task count</div><span class="kp p-w">Behind schedule</span><div class="kb"><div class="kbf" style="width:42%;background:var(--A)"></div></div></div>
+      <div class="kc b"><div class="kl">Critical delays</div><div class="kv">3</div><div class="km">Projects with SPI &lt; 0.85</div><span class="kp p-b">Needs recovery plan</span><div class="kb"><div class="kbf" style="width:75%;background:var(--R)"></div></div></div>
+      <div class="kc ok"><div class="kl">Total BOQ value ★</div><div class="kv">₹148 Cr</div><div class="km">Across 4 projects</div><span class="kp p-ok">As per estimates</span><div class="kb"><div class="kbf" style="width:70%;background:var(--G)"></div></div></div>
+      <div class="kc b"><div class="kl">Receivables gap ★</div><div class="kv">₹66 Cr</div><div class="km">Outstanding across portfolio</div><span class="kp p-b">Cash flow pressure</span><div class="kb"><div class="kbf" style="width:80%;background:var(--R)"></div></div></div>
+    </div>
+  </div>
+
+  <!-- Project cards -->
+  <div class="sh" style="margin-top:4px;margin-bottom:10px"><span class="st">Project snapshots — click to drill down</span></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:14px" id="proj-cards"></div>
+
+  <!-- Portfolio charts -->
+  <div class="g22">
+    <div class="sec">
+      <div class="sh"><span class="st">SPI vs CPI — project comparison</span><span class="dtag d">★ CPI dummy</span></div>
+      <div class="cw"><canvas id="port-spi-chart"></canvas></div>
+      <div class="leg"><span><span class="ld" style="background:var(--navy)"></span>SPI</span><span><span class="ld" style="background:var(--gold);opacity:.7"></span>CPI</span><span><span class="ld" style="background:#d1d5db"></span>Target 1.0</span></div>
+    </div>
+    <div class="sec">
+      <div class="sh"><span class="st">Task completion by project</span><span class="dtag">Live</span></div>
+      <div class="cw"><canvas id="port-prog-chart"></canvas></div>
+    </div>
+  </div>
+  <div class="g22">
+    <div class="sec">
+      <div class="sh"><span class="st">BOQ vs actual spend — by project (₹ Cr) ★</span><span class="dtag d">Dummy</span></div>
+      <div class="cw"><canvas id="port-cost-chart"></canvas></div>
+      <div class="leg"><span><span class="ld" style="background:rgba(0,0,0,.12)"></span>BOQ budget</span><span><span class="ld" style="background:var(--navy)"></span>Actual spent</span></div>
+    </div>
+    <div class="sec">
+      <div class="sh"><span class="st">Schedule delays — top issues across portfolio</span><span class="dtag">Live</span></div>
+      <div class="cw"><canvas id="port-delay-chart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Portfolio comparison table -->
+  <div class="sec">
+    <div class="sh"><span class="st">Portfolio comparison — all key metrics</span></div>
+    <table class="tbl" id="port-table"></table>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     VIEW 2 — PROJECT DASHBOARD
+════════════════════════════════════════════════ -->
+<div id="view-project" class="view">
+<div class="wrap">
+
+  <div class="topbar">
+    <div>
+      <div class="brand" id="proj-brand">Anantam Signature · <span>E Building</span></div>
+      <div class="sub" id="proj-sub"><span class="pulse"></span>Construction tool extract · 09 Apr 2026 · 659 tasks</div>
+    </div>
+    <div class="actions">
+      <select class="sel" id="catFilter">
+        <option value="all">All categories</option>
+        <option value="Civil">Civil</option>
+        <option value="Design">Design</option>
+        <option value="Electrical">Electrical</option>
+        <option value="Plumbing">Plumbing</option>
+        <option value="Tiling">Tiling</option>
+        <option value="Plaster">Plaster</option>
+        <option value="General">General</option>
+      </select>
+      <button class="btn" onclick="exportCSV('project')">↓ Export CSV</button>
+      <span class="dtag"><span class="pulse" style="width:5px;height:5px;margin-right:3px"></span>Live</span>
+      <span class="dtag d">★ Dummy</span>
+      <span class="dtag g">✕ Gap</span>
+    </div>
+  </div>
+
+  <div class="tabs" id="projTabBar">
+    <button class="tab active" data-pane="progress">Construction Progress</button>
+    <button class="tab" data-pane="schedule">Schedule &amp; Delays</button>
+    <button class="tab" data-pane="ops">Operational KPIs</button>
+    <button class="tab" data-pane="performance">Performance Board</button>
+    <button class="tab" data-pane="finance">Construction Finance ★</button>
+    <button class="tab" data-pane="gaps">Data Gaps</button>
+  </div>
+
+  <!-- PROGRESS PANE -->
+  <div id="pane-progress" class="pane active">
+    <div class="abar r">⚠ Drawing package <strong>228 days behind plan</strong> · Design avg delay 85 days · Electrical (72), Plumbing (62), Tiling (121) — zero tasks started</div>
+    <div class="sec">
+      <div class="sh"><span class="st">Project pulse</span><span class="dtag">Live · 09 Apr 2026</span></div>
+      <div class="kg k5">
+        <div class="kc w"><div class="kl">Overall progress</div><div class="kv">12.6<small style="font-size:13px;color:var(--t4)">%</small></div><div class="km">53 done / 659 tasks</div><span class="kp p-w">Below milestone</span><div class="kb"><div class="kbf" style="width:12.6%;background:var(--A)"></div></div></div>
+        <div class="kc ok"><div class="kl">Completed</div><div class="kv">53</div><div class="km">Foundations + Piling</div><span class="kp p-ok">Substructure clear</span><div class="kb"><div class="kbf" style="width:8%;background:var(--G)"></div></div></div>
+        <div class="kc w"><div class="kl">In progress</div><div class="kv">22</div><div class="km">Civil + Design active</div><span class="kp p-w">3.3% of scope</span><div class="kb"><div class="kbf" style="width:3.3%;background:var(--A)"></div></div></div>
+        <div class="kc b"><div class="kl">Not started</div><div class="kv">584</div><div class="km">88.6% of scope</div><span class="kp p-b">Schedule risk</span><div class="kb"><div class="kbf" style="width:88%;background:var(--R)"></div></div></div>
+        <div class="kc b"><div class="kl">Max drawing delay</div><div class="kv">228<small style="font-size:13px;color:var(--t4)">d</small></div><div class="km">Architecture drawing</div><span class="kp p-b">Critical path risk</span><div class="kb"><div class="kbf" style="width:85%;background:var(--R)"></div></div></div>
+      </div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:12px">
+        <span class="bdg bgg">✓ Piling</span><span class="bdg bgg">✓ Foundations</span><span class="bdg bgg">✓ Raft</span><span class="bdg bga">⟳ RCC 73.7%</span><span class="bdg bga">⟳ Basement 54.3%</span><span class="bdg bgr">✕ Electrical 0/72</span><span class="bdg bgr">✕ Plumbing 0/62</span><span class="bdg bgr">✕ Tiling 0/121</span>
+      </div>
+    </div>
+    <div class="g22">
+      <div class="sec"><div class="sh"><span class="st">WBS L1 work packages</span><span class="dtag">Live</span></div><div id="wbs-list"></div></div>
+      <div class="sec"><div class="sh"><span class="st">Task status by category</span><span class="dtag">Live</span></div><div class="cw"><canvas id="catChart"></canvas></div><div class="leg"><span><span class="ld" style="background:#0f6d50"></span>Completed</span><span><span class="ld" style="background:#a16207"></span>In progress</span><span><span class="ld" style="background:#d1d5db"></span>Not started</span></div></div>
+    </div>
+    <div class="sec"><div class="sh"><span class="st">Active in-progress tasks</span><span class="dtag">Live · 09 Apr 2026</span></div><table class="tbl"><thead><tr><th>Task</th><th>Category</th><th>Progress</th><th>Delay</th><th>Signal</th></tr></thead><tbody id="active-body"></tbody></table></div>
+    <div class="sec"><div class="sh"><span class="st">Category readiness</span><span class="dtag">Live</span></div><div id="cat-prog-list"></div></div>
+  </div>
+
+  <!-- SCHEDULE PANE -->
+  <div id="pane-schedule" class="pane">
+    <div class="abar a">⚠ 2nd slab at 35% vs target 80% · Drawing package critically delayed · Handover flagged +90d</div>
+    <div class="sec"><div class="sh"><span class="st">Schedule KPIs</span></div><div class="kg k4">
+      <div class="kc b"><div class="kl">SPI</div><div class="kv">0.77</div><div class="km">Actual vs planned progress</div><span class="kp p-b">23% behind plan</span><div class="kb"><div class="kbf" style="width:77%;background:var(--R)"></div></div></div>
+      <div class="kc b"><div class="kl">Avg delay</div><div class="kv">92<small style="font-size:13px;color:var(--t4)">d</small></div><div class="km">68 tasks with delay</div><span class="kp p-b">Critical</span><div class="kb"><div class="kbf" style="width:80%;background:var(--R)"></div></div></div>
+      <div class="kc b"><div class="kl">Max delay</div><div class="kv">241<small style="font-size:13px;color:var(--t4)">d</small></div><div class="km">Architecture drawing</div><span class="kp p-b">8 months behind</span><div class="kb"><div class="kbf" style="width:95%;background:var(--R)"></div></div></div>
+      <div class="kc w"><div class="kl">Handover risk</div><div class="kv">90+<small style="font-size:13px;color:var(--t4)">d</small></div><div class="km">Already flagged in tool</div><span class="kp p-w">3+ months at risk</span><div class="kb"><div class="kbf" style="width:70%;background:var(--A)"></div></div></div>
+    </div></div>
+    <div class="g22">
+      <div class="sec"><div class="sh"><span class="st">Milestone tracker</span></div><div id="milestone-list"></div></div>
+      <div class="sec"><div class="sh"><span class="st">Avg delay by category</span></div><div class="cw"><canvas id="delayChart"></canvas></div></div>
+    </div>
+    <div class="g22">
+      <div class="sec"><div class="sh"><span class="st">Top 15 most delayed tasks</span></div><table class="tbl"><thead><tr><th>Task</th><th>Category</th><th>Delay</th><th>Status</th><th>%</th></tr></thead><tbody id="delay-body"></tbody></table></div>
+      <div class="sec"><div class="sh"><span class="st">Slab programme</span></div><div id="slab-list"></div><div class="sh" style="margin-top:16px"><span class="st">RFI aging ★</span><span class="dtag d">Dummy</span></div><div class="cw sm"><canvas id="rfiChart"></canvas></div><div class="m3" style="margin-top:8px"><div class="mn"><div class="mv">23</div><div class="ml">Open RFIs</div></div><div class="mn"><div class="mv">8</div><div class="ml">Aging &gt;5d</div></div><div class="mn"><div class="mv">4.2d</div><div class="ml">Avg resolution</div></div></div></div>
+    </div>
+    <!-- Upcoming Scheduled Activities -->
+    <div class="sec" style="border-left-color:var(--navy);margin-top:0">
+      <div class="win-bar">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="st">Scheduled activities</span>
+          <span style="font-size:11px;color:var(--t4)">by work category · collapsible</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div class="win-summary" id="win-summary"></div>
+          <div class="win-btns" id="win-btns">
+            <button class="win-btn active" data-days="7">Next 7 days</button>
+            <button class="win-btn" data-days="15">Next 15 days</button>
+            <button class="win-btn" data-days="30">Next month</button>
+          </div>
+        </div>
+      </div>
+      <div id="upcoming-activities"></div>
+    </div>
+  </div>
+
+  <!-- OPERATIONAL PANE -->
+  <div id="pane-ops" class="pane">
+    <div class="abar i">ℹ KPIs marked ★ use dummy data. Integrate workforce attendance, quality system, safety register and material tracker to activate.</div>
+    <div class="sec"><div class="sh"><span class="st">Operational KPIs</span></div><div class="kg k5">
+      <div class="kc b"><div class="kl">SPI</div><div class="kv">0.77</div><div class="km">Target ≥ 1.0</div><span class="kp p-b">Critical</span><div class="kb"><div class="kbf" style="width:77%;background:var(--R)"></div></div></div>
+      <div class="kc w"><div class="kl">CPI ★</div><div class="kv">0.94</div><div class="km">Target ≥ 1.0</div><span class="kp p-w">Overspend risk</span><div class="kb"><div class="kbf" style="width:94%;background:var(--A)"></div></div></div>
+      <div class="kc b"><div class="kl">Progress vs plan</div><div class="kv">12.6<small style="font-size:12px">%</small></div><div class="km">Plan: 22% by Apr</div><span class="kp p-b">9.4 pts behind</span><div class="kb"><div class="kbf" style="width:57%;background:var(--R)"></div></div></div>
+      <div class="kc w"><div class="kl">Quality score ★</div><div class="kv">84<small style="font-size:12px">%</small></div><div class="km">Target ≥ 90%</div><span class="kp p-w">Below threshold</span><div class="kb"><div class="kbf" style="width:84%;background:var(--A)"></div></div></div>
+      <div class="kc b"><div class="kl">Design SLA</div><div class="kv">38<small style="font-size:12px">%</small></div><div class="km">Design tasks on schedule</div><span class="kp p-b">Critical bottleneck</span><div class="kb"><div class="kbf" style="width:38%;background:var(--R)"></div></div></div>
+    </div></div>
+    <div class="g22">
+      <div class="sec"><div class="sh"><span class="st">Cumulative completion trend ★</span><span class="dtag d">Dummy</span></div><div class="cw"><canvas id="trendChart"></canvas></div><div class="leg"><span><span class="ld" style="background:#0f6d50"></span>Actual</span><span><span class="ld" style="background:#d1d5db"></span>Planned</span></div></div>
+      <div class="sec"><div class="sh"><span class="st">Category completion %</span><span class="dtag">Live</span></div><div class="cw"><canvas id="readinessChart"></canvas></div></div>
+    </div>
+    <div class="g22">
+      <div class="sec"><div class="sh"><span class="st">Workforce deployment ★</span><span class="dtag d">Dummy</span></div><div class="cw sm"><canvas id="wfChart"></canvas></div><div class="m3"><div class="mn"><div class="mv">218</div><div class="ml">On site today</div></div><div class="mn"><div class="mv">94%</div><div class="ml">Vs plan</div></div><div class="mn"><div class="mv">232</div><div class="ml">Peak this month</div></div></div></div>
+      <div class="sec"><div class="sh"><span class="st">Safety metrics ★</span><span class="dtag d">Dummy</span></div><div class="cw sm"><canvas id="safetyChart"></canvas></div><div class="m4"><div class="mn"><div class="mv">0.8</div><div class="ml">LTIFR</div></div><div class="mn"><div class="mv">2</div><div class="ml">Near misses MTD</div></div><div class="mn"><div class="mv">88%</div><div class="ml">Toolbox talks</div></div><div class="mn"><div class="mv">1</div><div class="ml">LTI YTD</div></div></div></div>
+    </div>
+  </div>
+
+  <!-- PERFORMANCE PANE -->
+  <div id="pane-performance" class="pane">
+    <div class="abar i">ℹ Employee and team metrics are derived from assignees in imported PowerPlay task data.</div>
+    <div class="sec">
+      <div class="sh"><span class="st">Team performance snapshot</span><span class="dtag">Live</span></div>
+      <div class="kg k5" id="perf-kpi-cards"></div>
+    </div>
+    <div class="g22">
+      <div class="sec">
+        <div class="sh"><span class="st">Top contributors (task completion quality)</span></div>
+        <div class="cw sm"><canvas id="perfMemberChart"></canvas></div>
+      </div>
+      <div class="sec">
+        <div class="sh"><span class="st">Team workload distribution</span></div>
+        <div id="perf-team-list"></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sh"><span class="st">Employee scorecard</span><span class="dtag">Linked to assigned members</span></div>
+      <table class="tbl">
+        <thead><tr><th>Employee</th><th>Tasks</th><th>In Progress</th><th>Completed</th><th>Avg Progress</th><th>Delayed</th><th>On-time ratio</th><th>Signal</th></tr></thead>
+        <tbody id="perf-emp-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FINANCE PANE -->
+  <div id="pane-finance" class="pane">
+    <div class="abar a">★ All cost/payment data is dummy. Only excavation (₹30L) has real BOQ pricing from the construction tool. Upload full BOQ to activate CPI and EVM metrics.</div>
+
+    <!-- Construction EVM KPIs -->
+    <div class="sec"><div class="sh"><span class="st">Earned value management — construction KPIs ★</span><span class="dtag d">Dummy supplement</span></div>
+      <div class="kg k4">
+        <div class="kc w"><div class="kl">Cost performance index (CPI)</div><div class="kv">0.94</div><div class="km">AC ₹112 Cr · EV ₹105 Cr</div><span class="kp p-w">₹7 Cr overspend</span><div class="kb"><div class="kbf" style="width:94%;background:var(--A)"></div></div></div>
+        <div class="kc b"><div class="kl">Schedule perf. index (SPI)</div><div class="kv">0.77</div><div class="km">EV ₹105 Cr · PV ₹136 Cr</div><span class="kp p-b">₹31 Cr behind plan</span><div class="kb"><div class="kbf" style="width:77%;background:var(--R)"></div></div></div>
+        <div class="kc b"><div class="kl">Cost variance (CV)</div><div class="kv">-₹7 Cr</div><div class="km">EV – AC · Target: 0</div><span class="kp p-b">Over budget</span><div class="kb"><div class="kbf" style="width:65%;background:var(--R)"></div></div></div>
+        <div class="kc b"><div class="kl">Schedule variance (SV)</div><div class="kv">-₹31 Cr</div><div class="km">EV – PV · Behind plan</div><span class="kp p-b">Recovery needed</span><div class="kb"><div class="kbf" style="width:70%;background:var(--R)"></div></div></div>
+      </div>
+      <div class="kg k4" style="margin-top:10px">
+        <div class="kc i"><div class="kl">Budget at completion (BAC)</div><div class="kv">₹148 Cr</div><div class="km">Total approved BOQ</div><span class="kp p-i">All packages</span><div class="kb"><div class="kbf" style="width:100%;background:var(--navy)"></div></div></div>
+        <div class="kc w"><div class="kl">Estimate at completion (EAC)</div><div class="kv">₹157 Cr</div><div class="km">BAC ÷ CPI = ₹157 Cr</div><span class="kp p-w">₹9 Cr overrun forecast</span><div class="kb"><div class="kbf" style="width:85%;background:var(--A)"></div></div></div>
+        <div class="kc w"><div class="kl">Estimate to complete (ETC)</div><div class="kv">₹45 Cr</div><div class="km">EAC – AC remaining</div><span class="kp p-w">Cash required</span><div class="kb"><div class="kbf" style="width:60%;background:var(--A)"></div></div></div>
+        <div class="kc b"><div class="kl">Variance at completion (VAC)</div><div class="kv">-₹9 Cr</div><div class="km">BAC – EAC</div><span class="kp p-b">Projected overrun</span><div class="kb"><div class="kbf" style="width:70%;background:var(--R)"></div></div></div>
+      </div>
+    </div>
+
+    <!-- BOQ vs Actual -->
+    <div class="g32">
+      <div class="sec"><div class="sh"><span class="st">BOQ vs actual cost — by work category (₹ L) ★</span><span class="dtag d">Dummy</span></div><div class="cw lg"><canvas id="boqChart"></canvas></div><div class="leg"><span><span class="ld" style="background:#d1d5db;border:1px solid #b0ada4"></span>BOQ budget</span><span><span class="ld" style="background:#1e3a5f"></span>Work certified</span><span><span class="ld" style="background:#0f6d50"></span>Paid to contractor</span></div></div>
+      <div>
+        <div class="sec"><div class="sh"><span class="st">Cost breakdown by category ★</span></div><div class="cw sm"><canvas id="costPieChart"></canvas></div><div class="leg" id="cost-pie-leg"></div></div>
+        <div class="sec" style="margin-top:0"><div class="sh"><span class="st">Cost per sq ft — actual vs budget ★</span></div>
+          <div class="kg k3" style="margin-bottom:0">
+            <div class="mn"><div class="mv" style="color:var(--R)">₹4,850</div><div class="ml">Actual cost / sqft</div></div>
+            <div class="mn"><div class="mv" style="color:var(--t3)">₹4,600</div><div class="ml">Budgeted / sqft</div></div>
+            <div class="mn"><div class="mv" style="color:var(--A)">+5.4%</div><div class="ml">Cost overrun</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contractor payments -->
+    <div class="sec"><div class="sh"><span class="st">Contractor payment ledger ★</span><span class="dtag d">Dummy</span></div>
+      <table class="tbl">
+        <thead><tr><th>Contractor / Package</th><th>Category</th><th>BOQ Value (₹L)</th><th>Work Certified (₹L)</th><th>Paid to Date (₹L)</th><th>Outstanding (₹L)</th><th>Retention (₹L)</th><th>Status</th></tr></thead>
+        <tbody id="contractor-table"></tbody>
+      </table>
+    </div>
+
+    <!-- Cash flow + Change orders -->
+    <div class="g22">
+      <div class="sec"><div class="sh"><span class="st">Construction cash flow — planned vs actual (₹ L) ★</span><span class="dtag d">Dummy</span></div>
+        <div class="cw"><canvas id="cashflowChart"></canvas></div>
+        <div class="m3"><div class="mn"><div class="mv">₹112 Cr</div><div class="ml">Total spent to date</div></div><div class="mn"><div class="mv">₹36 Cr</div><div class="ml">Remaining to spend</div></div><div class="mn"><div class="mv">71%</div><div class="ml">Budget utilised</div></div></div>
+      </div>
+      <div class="sec"><div class="sh"><span class="st">Change orders — value &amp; category (₹ L) ★</span><span class="dtag d">Dummy</span></div>
+        <div class="cw"><canvas id="coChart"></canvas></div>
+        <div class="m3"><div class="mn"><div class="mv">47</div><div class="ml">Total change orders</div></div><div class="mn"><div class="mv">₹108 L</div><div class="ml">Total CO value</div></div><div class="mn"><div class="mv">6.2%</div><div class="ml">CO rate (% of BOQ)</div></div></div>
+      </div>
+    </div>
+
+    <!-- Material procurement -->
+    <div class="sec"><div class="sh"><span class="st">Material procurement status — key items ★</span><span class="dtag d">Dummy</span></div>
+      <table class="tbl">
+        <thead><tr><th>Material</th><th>Unit</th><th>BOQ Qty</th><th>PO Raised</th><th>GRN Received</th><th>Pending</th><th>Rate (₹/unit)</th><th>PO Value (₹L)</th><th>Paid (₹L)</th></tr></thead>
+        <tbody id="material-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- DATA GAPS PANE -->
+  <div id="pane-gaps" class="pane">
+    <div class="abar i">ℹ The construction tool extract powers the Progress and Schedule tabs. All other KPIs require additional data feeds listed below.</div>
+    <div class="sec"><div class="sh"><span class="st">Available from construction tool today</span><span class="dtag">Live</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px">
+        <div class="gc-card avail"><div style="font-size:20px;margin-bottom:8px">✓</div><div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--G)">Task progress & WBS hierarchy</div><div style="font-size:11px;color:var(--t2);line-height:1.65">659 tasks, L1–L5 WBS, progress %, status, parent-leaf structure.</div><div style="font-size:10px;color:var(--t4);margin-top:8px;padding-top:8px;border-top:1px solid rgba(15,109,80,.2)">Fields: ProgressPct, Status, Level, ParentLeaf</div></div>
+        <div class="gc-card avail"><div style="font-size:20px;margin-bottom:8px">✓</div><div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--G)">Planned vs actual dates & delay</div><div style="font-size:11px;color:var(--t2);line-height:1.65">Start/end dates, actual dates, duration, delay string per task.</div><div style="font-size:10px;color:var(--t4);margin-top:8px;padding-top:8px;border-top:1px solid rgba(15,109,80,.2)">Fields: StartDate, EndDate, ActualStart, ActualEnd, Delay</div></div>
+        <div class="gc-card part"><div style="font-size:20px;margin-bottom:8px">⚑</div><div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--A)">Cost / BOQ — 1 of 659 tasks priced</div><div style="font-size:11px;color:var(--t2);line-height:1.65">Excavation only (₹30L). CurrentPrice/TotalPrice fields exist but blank for 658 tasks.</div><div style="font-size:10px;color:var(--t4);margin-top:8px;padding-top:8px;border-top:1px solid rgba(161,98,7,.2)">Fix: Upload full BOQ via Data Upload tab</div></div>
+      </div>
+    </div>
+    <div class="sec"><div class="sh"><span class="st">Data required — missing feeds</span><span class="dtag g">✕ Missing</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">
+        <div class="gc-card miss"><div style="font-size:18px;margin-bottom:8px">✕</div><div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--R)">Full BOQ with task-level budgets</div><div style="font-size:11px;color:var(--t2);line-height:1.65">Unlocks CPI, EAC, EVM, cost variance. Upload to Data Upload tab.</div></div>
+        <div class="gc-card miss"><div style="font-size:18px;margin-bottom:8px">✕</div><div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--R)">Actual bills & GRN from Tally</div><div style="font-size:11px;color:var(--t2);line-height:1.65">Subcontractor invoices mapped per WBS. Source: Tally ERP → monthly export.</div></div>
+        <div class="gc-card miss"><div style="font-size:18px;margin-bottom:8px">✕</div><div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--R)">Daily workforce attendance</div><div style="font-size:11px;color:var(--t2);line-height:1.65">Headcount by trade. Source: Biometric / HR module → daily.</div></div>
+        <div class="gc-card miss"><div style="font-size:18px;margin-bottom:8px">✕</div><div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--R)">Quality NCRs & inspections</div><div style="font-size:11px;color:var(--t2);line-height:1.65">NCR log, pass/fail per task. Source: QMS → link to TaskID.</div></div>
+        <div class="gc-card miss"><div style="font-size:18px;margin-bottom:8px">✕</div><div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--R)">Safety incidents & LTIFR</div><div style="font-size:11px;color:var(--t2);line-height:1.65">Incident log, man-hours, LTI count. Source: HSE register → daily.</div></div>
+        <div class="gc-card miss"><div style="font-size:18px;margin-bottom:8px">✕</div><div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--R)">RFI & change order register</div><div style="font-size:11px;color:var(--t2);line-height:1.65">Submission/response date, cost per CO. Maintain in construction tool.</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div><!-- /view-project -->
+
+<!-- ═══════════════════════════════════════════════
+     VIEW 3 — DATA UPLOAD TEMPLATE
+════════════════════════════════════════════════ -->
+<div id="view-upload" class="view">
+<div class="wrap">
+
+  <div class="topbar">
+    <div>
+      <div class="brand">Golden Abodes · <span>Data Upload Template</span></div>
+      <div class="sub">Structured field definitions for all dashboard data feeds</div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" onclick="downloadTemplate()">↓ Download Template CSV</button>
+    </div>
+  </div>
+
+  <div class="abar g">✓ Use this template to prepare your weekly/monthly data files. Each tab below corresponds to a separate upload sheet. Required fields must be populated for the dashboard to function. Optional fields enhance additional KPIs.</div>
+
+  <div class="sec" id="ga-dashboard-library" style="border-left-color:#0f6d50;margin-bottom:18px">
+    <div class="sh"><span class="st">Saved dashboards</span><span class="dtag i" style="background:rgba(15,109,80,.12);border-color:rgba(15,109,80,.22);color:#0f6d50">MongoDB</span></div>
+    <div class="sec-sub">Save the current imported task / PDF / PO state under a name, then load it anytime. Requires the local API (<code>npm run server</code>) and MongoDB.</div>
+    <div id="ga-dash-active-hint" style="font-size:12px;color:#6b7280;margin-bottom:10px;min-height:18px"></div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px">
+      <input type="text" id="ga-dash-save-name" placeholder="Name for this dashboard" style="min-width:240px;padding:8px 12px;border:1px solid #e4e2dc;border-radius:8px;font-size:13px;font-family:inherit" autocomplete="off" />
+      <button type="button" class="btn primary" id="ga-dash-save-btn">Save dashboard</button>
+      <button type="button" class="btn" id="ga-dash-new-btn">New dashboard</button>
+      <span id="ga-dash-lib-msg" style="font-size:12px;color:#6b7280"></span>
+    </div>
+    <div style="font-size:12px;font-weight:600;color:#1e3a5f;margin-bottom:8px">Your saved dashboards — click Load to restore</div>
+    <div id="ga-dash-saved-list" style="display:flex;flex-direction:column;gap:8px;max-height:260px;overflow:auto"></div>
+  </div>
+
+  <!-- TABS for upload sheets -->
+  <div class="tabs" id="uploadTabBar">
+    <button class="tab active" data-utab="task">1 · Task Progress</button>
+    <button class="tab" data-utab="boq">2 · BOQ & Cost</button>
+    <button class="tab" data-utab="contractor">3 · Contractor Payments</button>
+    <button class="tab" data-utab="workforce">4 · Workforce</button>
+    <button class="tab" data-utab="material">5 · Materials & PO</button>
+    <button class="tab" data-utab="safety">6 · Safety</button>
+    <button class="tab" data-utab="rfi">7 · RFI & Change Orders</button>
+    <button class="tab" data-utab="sales">8 · Sales & Collections</button>
+  </div>
+
+  <div id="upane-task" class="pane active"></div>
+  <div id="upane-boq" class="pane"></div>
+  <div id="upane-contractor" class="pane"></div>
+  <div id="upane-workforce" class="pane"></div>
+  <div id="upane-material" class="pane"></div>
+  <div id="upane-safety" class="pane"></div>
+  <div id="upane-rfi" class="pane"></div>
+  <div id="upane-sales" class="pane"></div>
+
+</div>
+</div><!-- /view-upload -->

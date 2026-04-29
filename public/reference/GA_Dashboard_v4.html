@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Golden Abodes · Construction Command Centre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --canvas:#f4f3f0;--surface:#ffffff;--s2:#faf9f7;
+  --b1:#e4e2dc;--b2:#d2cfc7;
+  --t1:#111827;--t2:#374151;--t3:#6b7280;--t4:#9ca3af;
+  --navy:#1e3a5f;--navy-lt:#e8eef6;
+  --gold:#96690b;--gold-lt:#fdf4e3;
+  --G:#0f6d50;--G-lt:#edf7f3;
+  --A:#a16207;--A-lt:#fefce8;
+  --R:#b91c1c;--R-lt:#fef2f2;
+  --P:#6d28d9;--P-lt:#f5f3ff;
+  --T:#0d7a6e;--T-lt:#edfaf8;
+  --sh1:0 1px 3px rgba(17,24,39,.06),0 1px 2px rgba(17,24,39,.04);
+  --sh2:0 4px 16px rgba(17,24,39,.07),0 2px 6px rgba(17,24,39,.04);
+  --r:6px;--rl:10px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'DM Sans',system-ui,sans-serif;background:var(--canvas);color:var(--t1);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+/* NAV */
+.nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:9px 28px;background:var(--surface);border-bottom:1px solid var(--b1);position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.nav-logo{font-size:14px;font-weight:700;letter-spacing:-.01em;color:var(--t1);margin-right:8px;white-space:nowrap}
+.nav-logo span{color:var(--gold)}
+.nav-sep{width:1px;height:18px;background:var(--b2);margin:0 4px}
+.nav-view-btn{font-family:inherit;font-size:12px;font-weight:600;padding:6px 12px;border-radius:var(--r);border:1px solid transparent;background:transparent;color:var(--t3);cursor:pointer;transition:.15s;white-space:nowrap}
+.nav-view-btn:hover{color:var(--t1);background:var(--canvas)}
+.nav-view-btn.active{background:var(--navy-lt);color:var(--navy);border-color:rgba(30,58,95,.15)}
+.nav-proj-sel{font-family:inherit;font-size:12px;font-weight:600;padding:6px 10px;border:1px solid var(--b2);border-radius:var(--r);background:var(--surface);color:var(--t1);cursor:pointer;min-width:220px;box-shadow:var(--sh1)}
+.nav-hint{margin-left:auto;font-size:11px;color:var(--t4)}
+
+/* VIEWS */
+.view{display:none}.view.active{display:block}
+
+/* WRAP */
+.wrap{max-width:1440px;margin:0 auto;padding:18px 28px 56px}
+
+/* TOPBAR */
+.topbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--b1);border-radius:var(--rl);padding:13px 18px;margin-bottom:12px;box-shadow:var(--sh1)}
+.brand{font-size:15px;font-weight:700;letter-spacing:-.01em}.brand span{color:var(--gold)}
+.sub{font-size:11px;color:var(--t3);margin-top:3px;display:flex;align-items:center;gap:6px}
+.pulse{width:7px;height:7px;background:var(--G);border-radius:50%;display:inline-block;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sel,.btn{font-family:inherit;font-size:12px;font-weight:500;padding:7px 12px;border:1px solid var(--b2);border-radius:var(--r);background:var(--surface);color:var(--t2);cursor:pointer;transition:.15s;height:34px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.sel:hover,.btn:hover{border-color:var(--navy);color:var(--navy)}
+.btn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn.primary:hover{background:#152a45;border-color:#152a45}
+.dtag{display:inline-flex;align-items:center;gap:4px;background:var(--G-lt);border:1px solid rgba(15,109,80,.22);border-radius:4px;padding:2px 7px;font-size:10px;color:var(--G);font-weight:600}
+.dtag.d{background:var(--A-lt);border-color:rgba(161,98,7,.22);color:var(--A)}
+.dtag.g{background:var(--R-lt);border-color:rgba(185,28,28,.22);color:var(--R)}
+
+/* TABS */
+.tabs{display:flex;gap:0;margin-bottom:14px;border-bottom:1px solid var(--b1);flex-wrap:wrap;overflow-x:auto}
+.tab{font-family:inherit;font-size:13px;font-weight:500;padding:10px 18px 12px;border:none;background:transparent;color:var(--t3);cursor:pointer;position:relative;transition:color .15s;white-space:nowrap;margin-bottom:-1px}
+.tab:hover{color:var(--t1)}
+.tab.active{color:var(--navy);font-weight:600}
+.tab.active::after{content:'';position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--navy);border-radius:2px 2px 0 0}
+.pane{display:none}.pane.active{display:block}
+
+/* ALERTS */
+.abar{border-radius:var(--r);padding:10px 14px;font-size:12px;margin-bottom:12px;display:flex;align-items:flex-start;gap:10px;line-height:1.5}
+.abar.r{background:var(--R-lt);border:1px solid rgba(185,28,28,.2);color:var(--R)}
+.abar.a{background:var(--A-lt);border:1px solid rgba(161,98,7,.2);color:var(--A)}
+.abar.i{background:var(--navy-lt);border:1px solid rgba(30,58,95,.18);color:var(--navy)}
+.abar.g{background:var(--G-lt);border:1px solid rgba(15,109,80,.2);color:var(--G)}
+
+/* SECTIONS */
+.sec{background:var(--surface);border:1px solid var(--b1);border-left:3px solid var(--gold);border-radius:var(--rl);padding:16px 18px;margin-bottom:14px;box-shadow:var(--sh1)}
+.sec.nb{border-left:1px solid var(--b1)}
+.sec.navy{border-left-color:var(--navy)}
+.sec.green{border-left-color:var(--G)}
+.sec.red{border-left-color:var(--R)}
+.g22>div:first-child>.sec,.g22>div:first-child{}.g22>.sec:first-child{border-left-color:var(--navy)}.g22>.sec:last-child{border-left-color:var(--T)}
+.sh{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.st{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);font-weight:600}
+.sec-sub{font-size:11px;color:var(--t4);margin-top:-10px;margin-bottom:12px}
+
+/* KPI CARDS */
+.kg{display:grid;gap:10px}
+.k6{grid-template-columns:repeat(6,minmax(0,1fr))}
+.k5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.k4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.k3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.kc{background:var(--s2);border:1px solid var(--b1);border-top:3px solid var(--b2);border-radius:var(--rl);padding:14px;box-shadow:var(--sh1);transition:box-shadow .18s,transform .18s;cursor:default}
+.kc:hover{box-shadow:var(--sh2);transform:translateY(-1px)}
+.kc.ok{border-top-color:var(--G)}.kc.w{border-top-color:var(--A)}.kc.b{border-top-color:var(--R)}.kc.i{border-top-color:var(--navy)}
+.kl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;line-height:1.3;font-weight:500}
+.kv{font-size:22px;font-weight:700;color:var(--t1);margin-top:6px;line-height:1;letter-spacing:-.02em}
+.km{font-size:11px;color:var(--t4);margin-top:5px;line-height:1.4}
+.kp{display:inline-block;font-size:10px;border-radius:3px;padding:2px 7px;margin-top:6px;font-weight:600;letter-spacing:.01em}
+.p-ok{background:var(--G-lt);color:var(--G)}.p-w{background:var(--A-lt);color:var(--A)}.p-b{background:var(--R-lt);color:var(--R)}.p-i{background:var(--navy-lt);color:var(--navy)}
+.kb{height:4px;background:var(--b1);border-radius:99px;margin-top:10px;overflow:hidden}
+.kbf{height:100%;border-radius:99px}
+
+/* GRIDS */
+.g2{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+.g22{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g32{display:grid;grid-template-columns:3fr 2fr;gap:14px}
+
+/* CHARTS */
+.cw{position:relative;height:260px}.cw.sm{height:200px}.cw.lg{height:320px}.cw.xs{height:160px}
+
+/* PROGRESS ROWS */
+.pr{display:grid;grid-template-columns:190px 1fr 64px 90px;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--b1)}
+.pr:last-child{border-bottom:none}
+.pr.s{grid-template-columns:160px 1fr 56px 80px}
+.pl{font-size:11px;color:var(--t2)}.pt{height:6px;background:var(--b1);border-radius:99px;overflow:hidden}
+.pf{height:100%;border-radius:99px}.pv{font-size:11px;text-align:right;font-weight:700}.pd{font-size:10px;text-align:right}
+.dok{color:var(--G)}.dw{color:var(--A)}.db{color:var(--R)}
+
+/* BADGES */
+.bdg{display:inline-block;font-size:10px;border-radius:3px;padding:3px 8px;font-weight:600;letter-spacing:.01em}
+.bgg{background:var(--G-lt);color:var(--G)}.bga{background:var(--A-lt);color:var(--A)}.bgr{background:var(--R-lt);color:var(--R)}
+.bgb{background:var(--navy-lt);color:var(--navy)}.bgp{background:var(--P-lt);color:var(--P)}
+.bgs{background:var(--canvas);color:var(--t2);border:1px solid var(--b1)}.bgd{background:var(--gold-lt);color:var(--gold)}
+.bgt{background:var(--T-lt);color:var(--T)}
+
+/* MINI STATS */
+.m3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
+.m4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:10px}
+.m2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.mn{background:var(--canvas);border:1px solid var(--b1);border-radius:var(--r);padding:10px 12px}
+.mv{font-size:18px;font-weight:700;color:var(--t1);letter-spacing:-.01em}.ml{font-size:10px;color:var(--t3);margin-top:2px}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--t4);font-weight:600;border-bottom:1px solid var(--b2);padding:7px 8px;text-align:left;background:var(--canvas)}
+.tbl td{font-size:11px;padding:8px;border-bottom:1px solid var(--b1);color:var(--t2)}
+.tbl td:first-child{font-weight:600;color:var(--t1)}
+.tbl tr:hover td{background:var(--canvas)}
+
+/* WBS ROWS */
+.wn{padding:7px 0;border-bottom:1px solid var(--b1);display:flex;align-items:flex-start;gap:10px}
+.wn:last-child{border-bottom:none}
+.wn-name{font-size:12px;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wn-cat{font-size:10px;color:var(--t4)}
+
+/* LEGEND */
+.leg{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--t3);margin-top:10px}
+.ld{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle}
+
+/* GC CARDS */
+.gc-card{background:var(--s2);border:1px solid var(--b1);border-radius:var(--rl);padding:16px;box-shadow:var(--sh1)}
+.gc-card.avail{border-color:rgba(15,109,80,.3);background:var(--G-lt)}
+.gc-card.part{border-color:rgba(161,98,7,.3);background:var(--A-lt)}
+.gc-card.miss{border-color:rgba(185,28,28,.25);background:var(--R-lt)}
+
+/* UPLOAD TEMPLATE */
+.field-group{background:var(--surface);border:1px solid var(--b1);border-radius:var(--rl);overflow:hidden;margin-bottom:14px}
+.field-group-header{background:var(--canvas);padding:10px 16px;border-bottom:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between}
+.field-group-title{font-size:12px;font-weight:700;color:var(--t1);text-transform:uppercase;letter-spacing:.06em}
+.field-row{display:grid;grid-template-columns:180px 100px 1fr 120px 80px;gap:0;border-bottom:1px solid var(--b1);font-size:11px}
+.field-row:last-child{border-bottom:none}
+.field-row.hdr{background:var(--canvas);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--t4)}
+.field-row div{padding:9px 12px;border-right:1px solid var(--b1)}
+.field-row div:last-child{border-right:none}
+.req{color:var(--R);font-weight:700}
+.opt{color:var(--G);font-weight:700}
+
+/* PORTFOLIO CARDS */
+.proj-card{background:var(--surface);border:1px solid var(--b1);border-radius:var(--rl);padding:18px;box-shadow:var(--sh1);cursor:pointer;transition:box-shadow .18s,transform .15s;position:relative;overflow:hidden}
+.proj-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.proj-card.p1::before{background:var(--navy)}.proj-card.p2::before{background:var(--gold)}.proj-card.p3::before{background:var(--G)}.proj-card.p4::before{background:var(--P)}
+.proj-card:hover{box-shadow:var(--sh2);transform:translateY(-2px)}
+.proj-card-name{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:4px}
+.proj-card-meta{font-size:11px;color:var(--t3);margin-bottom:14px}
+.proj-card-stat{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.proj-stat-label{font-size:10px;color:var(--t4)}
+.proj-stat-val{font-size:13px;font-weight:700}
+
+/* ---- Upcoming activities ---- */
+.win-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.win-btns{display:flex;gap:4px;background:var(--canvas);border:1px solid var(--b1);border-radius:var(--r);padding:3px}
+.win-btn{font-family:inherit;font-size:12px;font-weight:600;padding:6px 16px;border:none;border-radius:calc(var(--r) - 2px);background:transparent;color:var(--t3);cursor:pointer;transition:.15s;white-space:nowrap}
+.win-btn.active{background:var(--surface);color:var(--navy);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.win-btn:hover:not(.active){color:var(--t1)}
+.win-summary{display:flex;gap:8px;flex-wrap:wrap}
+.win-chip{font-size:11px;font-weight:600;padding:5px 12px;border-radius:99px;border:1px solid}
+.chip-ip{background:var(--A-lt);color:var(--A);border-color:rgba(161,98,7,.2)}
+.chip-ns{background:var(--navy-lt);color:var(--navy);border-color:rgba(30,58,95,.2)}
+.chip-dl{background:var(--R-lt);color:var(--R);border-color:rgba(185,28,28,.2)}
+.chip-ok{background:var(--G-lt);color:var(--G);border-color:rgba(15,109,80,.2)}
+.cat-group{border:1px solid var(--b1);border-radius:var(--rl);overflow:hidden;margin-bottom:8px}
+.cat-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--canvas);cursor:pointer;user-select:none;transition:background .15s;flex-wrap:wrap}
+.cat-header:hover{background:var(--b1)}
+.cat-arrow{font-size:11px;color:var(--t4);transition:transform .2s;flex-shrink:0;width:14px}
+.cat-arrow.open{transform:rotate(90deg)}
+.cat-name{font-size:12px;font-weight:700;color:var(--t1);min-width:120px}
+.cat-pills{display:flex;gap:5px;flex-wrap:wrap;margin-left:auto}
+.cat-body{display:none;background:var(--surface)}
+.cat-body.open{display:block}
+.act-hdr{display:grid;grid-template-columns:20px 1fr 130px 48px 160px 70px 110px 90px;gap:0;padding:6px 14px;background:var(--s2);border-bottom:1px solid var(--b1);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--t4)}
+.act-row{display:grid;grid-template-columns:20px 1fr 130px 48px 160px 70px 110px 90px;gap:0;padding:9px 14px;border-bottom:1px solid var(--b1);align-items:center;transition:background .1s}
+.act-row:last-child{border-bottom:none}
+.act-row:hover{background:var(--canvas)}
+.act-swatch{width:8px;height:8px;border-radius:50%}
+.act-name{font-size:12px;color:var(--t1);font-weight:500;padding-right:12px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.act-dates{font-size:10px;color:var(--t3);font-variant-numeric:tabular-nums}
+.act-dur{font-size:10px;color:var(--t4);text-align:center}
+.act-bar-wrap{display:flex;align-items:center;gap:7px}
+.act-bar-track{flex:1;height:5px;background:var(--b1);border-radius:99px;overflow:hidden;min-width:60px}
+.act-bar-fill{height:100%;border-radius:99px}
+.act-pct{font-size:10px;font-weight:700;min-width:32px;text-align:right}
+.act-delay{font-size:10px;font-weight:600;text-align:center}
+.act-mem{font-size:10px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.act-stat{font-size:10px;font-weight:600;text-align:right}
+.no-tasks{padding:20px;text-align:center;font-size:12px;color:var(--t4)}
+@media(max-width:900px){
+  .act-hdr{grid-template-columns:16px 1fr 80px 36px 110px 52px 80px 70px;font-size:9px}
+  .act-row{grid-template-columns:16px 1fr 80px 36px 110px 52px 80px 70px}
+  .act-name{font-size:11px}
+}
+@media(max-width:650px){
+  .act-hdr,.act-row{grid-template-columns:16px 1fr 90px 50px 1fr}
+  .act-hdr > div:nth-child(n+5):not(:nth-child(5)),
+  .act-row > div:nth-child(n+5):not(:nth-child(5)){display:none}
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--canvas)}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:99px}
+
+/* RESPONSIVE */
+@media(max-width:1100px){
+  .k6,.k5,.k4{grid-template-columns:1fr 1fr 1fr}
+  .g2,.g22,.g3,.g32{grid-template-columns:1fr}
+  .pr{grid-template-columns:1fr 1fr 50px 70px}
+}
+@media(max-width:700px){
+  .k6,.k5,.k4,.k3{grid-template-columns:1fr 1fr}
+  .wrap{padding:12px 14px 40px}
+  .field-row{grid-template-columns:1fr 1fr;font-size:10px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     NAV
+════════════════════════════════════════════════ -->
+<nav class="nav">
+  <div class="nav-logo">Golden Abodes · <span>Command Centre</span></div>
+  <div class="nav-sep"></div>
+  <button class="nav-view-btn active" onclick="showView('portfolio',this)">Portfolio</button>
+  <button class="nav-view-btn" onclick="showView('project',this)">Project</button>
+  <button class="nav-view-btn" onclick="showView('upload',this)">Data Upload</button>
+  <div class="nav-sep"></div>
+  <select class="nav-proj-sel" id="projSel" onchange="onProjChange(this.value)">
+    <option value="p1">Anantam Signature — E Building</option>
+    <option value="p2">GA Residences — Pimpri</option>
+    <option value="p3">GA Heights — Mumbai</option>
+    <option value="p4">GA Villas — Goa</option>
+  </select>
+  <span class="nav-hint">Construction execution · Apr 2026</span>
+</nav>
+
+<!-- ═══════════════════════════════════════════════
+     VIEW 1 — PORTFOLIO ROLLUP
+════════════════════════════════════════════════ -->
+<div id="view-portfolio" class="view active">
+<div class="wrap">
+
+  <div class="topbar">
+    <div>
+      <div class="brand">Golden Abodes · <span>Portfolio Execution Overview</span></div>
+      <div class="sub"><span class="pulse"></span>4 active projects · 09 Apr 2026</div>
+    </div>
+    <div class="actions">
+      <button class="btn" onclick="exportCSV('portfolio')">↓ Export CSV</button>
+    </div>
+  </div>
+
+  <!-- Portfolio KPIs -->
+  <div class="sec">
+    <div class="sh"><span class="st">Portfolio execution pulse</span><span class="dtag">Live · 09 Apr 2026</span></div>
+    <div class="kg k6">
+      <div class="kc w"><div class="kl">Portfolio SPI</div><div class="kv">0.87</div><div class="km">Weighted avg across projects</div><span class="kp p-w">Below 1.0 target</span><div class="kb"><div class="kbf" style="width:87%;background:var(--A)"></div></div></div>
+      <div class="kc w"><div class="kl">Portfolio CPI ★</div><div class="kv">0.94</div><div class="km">Dummy — BOQ not loaded</div><span class="kp p-w">Overspend risk</span><div class="kb"><div class="kbf" style="width:94%;background:var(--A)"></div></div></div>
+      <div class="kc w"><div class="kl">Avg completion</div><div class="kv">42<small style="font-size:13px;color:var(--t4)">%</small></div><div class="km">Weighted by task count</div><span class="kp p-w">Behind schedule</span><div class="kb"><div class="kbf" style="width:42%;background:var(--A)"></div></div></div>
+      <div class="kc b"><div class="kl">Critical delays</div><div class="kv">3</div><div class="km">Projects with SPI &lt; 0.85</div><span class="kp p-b">Needs recovery plan</span><div class="kb"><div class="kbf" style="width:75%;background:var(--R)"></div></div></div>
+      <div class="kc ok"><div class="kl">Total BOQ value ★</div><div class="kv">₹148 Cr</div><div class="km">Across 4 projects</div><span class="kp p-ok">As per estimates</span><div class="kb"><div class="kbf" style="width:70%;background:var(--G)"></div></div></div>
+      <div class="kc b"><div class="kl">Receivables gap ★</div><div class="kv">₹66 Cr</div><div class="km">Outstanding across portfolio</div><span class="kp p-b">Cash flow pressure</span><div class="kb"><div class="kbf" style="width:80%;background:var(--R)"></div></div></div>
+    </div>
+  </div>
+
+  <!-- Project cards -->
+  <div class="sh" style="margin-top:4px;margin-bottom:10px"><span class="st">Project snapshots — click to drill down</span></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:14px" id="proj-cards"></div>
+
+  <!-- Portfolio charts -->
+  <div class="g22">
+    <div class="sec">
+      <div class="sh"><span class="st">SPI vs CPI — project comparison</span><span class="dtag d">★ CPI dummy</span></div>
+      <div class="cw"><canvas id="port-spi-chart"></canvas></div>
+      <div class="leg"><span><span class="ld" style="background:var(--navy)"></span>SPI</span><span><span class="ld" style="background:var(--gold);opacity:.7"></span>CPI</span><span><span class="ld" style="background:#d1d5db"></span>Target 1.0</span></div>
+    </div>
+    <div class="sec">
+      <div class="sh"><span class="st">Task completion by project</span><span class="dtag">Live</span></div>
+      <div class="cw"><canvas id="port-prog-chart"></canvas></div>
+    </div>
+  </div>
+  <div class="g22">
+    <div class="sec">
+      <div class="sh"><span class="st">BOQ vs actual spend — by project (₹ Cr) ★</span><span class="dtag d">Dummy</span></div>
+      <div class="cw"><canvas id="port-cost-chart"></canvas></div>
+      <div class="leg"><span><span class="ld" style="background:rgba(0,0,0,.12)"></span>BOQ budget</span><span><span class="ld" style="background:var(--navy)"></span>Actual spent</span></div>
+    </div>
+    <div class="sec">
+      <div class="sh"><span class="st">Schedule delays — top issues across portfolio</span><span class="dtag">Live</span></div>
+      <div class="cw"><canvas id="port-delay-chart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Portfolio comparison table -->
+  <div class="sec">
+    <div class="sh"><span class="st">Portfolio comparison — all key metrics</span></div>
+    <table class="tbl" id="port-table"></table>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     VIEW 2 — PROJECT DASHBOARD
+════════════════════════════════════════════════ -->
+<div id="view-project" class="view">
+<div class="wrap">
+
+  <div class="topbar">
+    <div>
+      <div class="brand" id="proj-brand">Anantam Signature · <span>E Building</span></div>
+      <div class="sub" id="proj-sub"><span class="pulse"></span>Construction tool extract · 09 Apr 2026 · 659 tasks</div>
+    </div>
+    <div class="actions">
+      <select class="sel" id="catFilter">
+        <option value="all">All categories</option>
+        <option value="Civil">Civil</option>
+        <option value="Design">Design</option>
+        <option value="Electrical">Electrical</option>
+        <option value="Plumbing">Plumbing</option>
+        <option value="Tiling">Tiling</option>
+        <option value="Plaster">Plaster</option>
+        <option value="General">General</option>
+      </select>
+      <button class="btn" onclick="exportCSV('project')">↓ Export CSV</button>
+      <span class="dtag"><span class="pulse" style="width:5px;height:5px;margin-right:3px"></span>Live</span>
+      <span class="dtag d">★ Dummy</span>
+      <span class="dtag g">✕ Gap</span>
+    </div>
+  </div>
+
+  <div class="tabs" id="projTabBar">
+    <button class="tab active" data-pane="progress">Construction Progress</button>
+    <button class="tab" data-pane="schedule">Schedule &amp; Delays</button>
+    <button class="tab" data-pane="ops">Operational KPIs</button>
+    <button class="tab" data-pane="finance">Construction Finance ★</button>
+    <button class="tab" data-pane="gaps">Data Gaps</button>
+  </div>
+
+  <!-- PROGRESS PANE -->
+  <div id="pane-progress" class="pane active">
+    <div class="abar r">⚠ Drawing package <strong>228 days behind plan</strong> · Design avg delay 85 days · Electrical (72), Plumbing (62), Tiling (121) — zero tasks started</div>
+    <div class="sec">
+      <div class="sh"><span class="st">Project pulse</span><span class="dtag">Live · 09 Apr 2026</span></div>
+      <div class="kg k5">
+        <div class="kc w"><div class="kl">Overall progress</div><div class="kv">12.6<small style="font-size:13px;color:var(--t4)">%</small></div><div class="km">53 done / 659 tasks</div><span class="kp p-w">Below milestone</span><div class="kb"><div class="kbf" style="width:12.6%;background:var(--A)"></div></div></div>
+        <div class="kc ok"><div class="kl">Completed</div><div class="kv">53</div><div class="km">Foundations + Piling</div><span class="kp p-ok">Substructure clear</span><div class="kb"><div class="kbf" style="width:8%;background:var(--G)"></div></div></div>
+        <div class="kc w"><div class="kl">In progress</div><div class="kv">22</div><div class="km">Civil + Design active</div><span class="kp p-w">3.3% of scope</span><div class="kb"><div class="kbf" style="width:3.3%;background:var(--A)"></div></div></div>
+        <div class="kc b"><div class="kl">Not started</div><div class="kv">584</div><div class="km">88.6% of scope</div><span class="kp p-b">Schedule risk</span><div class="kb"><div class="kbf" style="width:88%;background:var(--R)"></div></div></div>
+        <div class="kc b"><div class="kl">Max drawing delay</div><div class="kv">228<small style="font-size:13px;color:var(--t4)">d</small></div><div class="km">Architecture drawing</div><span class="kp p-b">Critical path risk</span><div class="kb"><div class="kbf" style="width:85%;background:var(--R)"></div></div></div>
+      </div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:12px">
+        <span class="bdg bgg">✓ Piling</span><span class="bdg bgg">✓ Foundations</span><span class="bdg bgg">✓ Raft</span><span class="bdg bga">⟳ RCC 73.7%</span><span class="bdg bga">⟳ Basement 54.3%</span><span class="bdg bgr">✕ Electrical 0/72</span><span class="bdg bgr">✕ Plumbing 0/62</span><span class="bdg bgr">✕ Tiling 0/121</span>
+      </div>
+    </div>
+    <div class="g22">
+      <div class="sec"><div class="sh"><span class="st">WBS L1 work packages</span><span class="dtag">Live</span></div><div id="wbs-list"></div></div>
+      <div class="sec"><div class="sh"><span class="st">Task status by category</span><span class="dtag">Live</span></div><div class="cw"><canvas id="catChart"></canvas></div><div class="leg"><span><span class="ld" style="background:#0f6d50"></span>Completed</span><span><span class="ld" style="background:#a16207"></span>In progress</span><span><span class="ld" style="background:#d1d5db"></span>Not started</span></div></div>
+    </div>
+    <div class="sec"><div class="sh"><span class="st">Active in-progress tasks</span><span class="dtag">Live · 09 Apr 2026</span></div><table class="tbl"><thead><tr><th>Task</th><th>Category</th><th>Progress</th><th>Delay</th><th>Signal</th></tr></thead><tbody id="active-body"></tbody></table></div>
+    <div class="sec"><div class="sh"><span class="st">Category readiness</span><span class="dtag">Live</span></div><div id="cat-prog-list"></div></div>
+  </div>
+
+  <!-- SCHEDULE PANE -->
+  <div id="pane-schedule" class="pane">
+    <div class="abar a">⚠ 2nd slab at 35% vs target 80% · Drawing package critically delayed · Handover flagged +90d</div>
+    <div class="sec"><div class="sh"><span class="st">Schedule KPIs</span></div><div class="kg k4">
+      <div class="kc b"><div class="kl">SPI</div><div class="kv">0.77</div><div class="km">Actual vs planned progress</div><span class="kp p-b">23% behind plan</span><div class="kb"><div class="kbf" style="width:77%;background:var(--R)"></div></div></div>
+      <div class="kc b"><div class="kl">Avg delay</div><div class="kv">92<small style="font-size:13px;color:var(--t4)">d</small></div><div class="km">68 tasks with delay</div><span class="kp p-b">Critical</span><div class="kb"><div class="kbf" style="width:80%;background:var(--R)"></div></div></div>
+      <div class="kc b"><div class="kl">Max delay</div><div class="kv">241<small style="font-size:13px;color:var(--t4)">d</small></div><div class="km">Architecture drawing</div><span class="kp p-b">8 months behind</span><div class="kb"><div class="kbf" style="width:95%;background:var(--R)"></div></div></div>
+      <div class="kc w"><div class="kl">Handover risk</div><div class="kv">90+<small style="font-size:13px;color:var(--t4)">d</small></div><div class="km">Already flagged in tool</div><span class="kp p-w">3+ months at risk</span><div class="kb"><div class="kbf" style="width:70%;background:var(--A)"></div></div></div>
+    </div></div>
+    <div class="g22">
+      <div class="sec"><div class="sh"><span class="st">Milestone tracker</span></div><div id="milestone-list"></div></div>
+      <div class="sec"><div class="sh"><span class="st">Avg delay by category</span></div><div class="cw"><canvas id="delayChart"></canvas></div></div>
+    </div>
+    <div class="g22">
+      <div class="sec"><div class="sh"><span class="st">Top 15 most delayed tasks</span></div><table class="tbl"><thead><tr><th>Task</th><th>Category</th><th>Delay</th><th>Status</th><th>%</th></tr></thead><tbody id="delay-body"></tbody></table></div>
+      <div class="sec"><div class="sh"><span class="st">Slab programme</span></div><div id="slab-list"></div><div class="sh" style="margin-top:16px"><span class="st">RFI aging ★</span><span class="dtag d">Dummy</span></div><div class="cw sm"><canvas id="rfiChart"></canvas></div><div class="m3" style="margin-top:8px"><div class="mn"><div class="mv">23</div><div class="ml">Open RFIs</div></div><div class="mn"><div class="mv">8</div><div class="ml">Aging &gt;5d</div></div><div class="mn"><div class="mv">4.2d</div><div class="ml">Avg resolution</div></div></div></div>
+    </div>
+    <!-- Upcoming Scheduled Activities -->
+    <div class="sec" style="border-left-color:var(--navy);margin-top:0">
+      <div class="win-bar">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="st">Scheduled activities</span>
+          <span style="font-size:11px;color:var(--t4)">by work category · collapsible</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div class="win-summary" id="win-summary"></div>
+          <div class="win-btns" id="win-btns">
+            <button class="win-btn active" data-days="7">Next 7 days</button>
+            <button class="win-btn" data-days="15">Next 15 days</button>
+            <button class="win-btn" data-days="30">Next month</button>
+          </div>
+        </div>
+      </div>
+      <div id="upcoming-activities"></div>
+    </div>
+  </div>
+
+  <!-- OPERATIONAL PANE -->
+  <div id="pane-ops" class="pane">
+    <div class="abar i">ℹ KPIs marked ★ use dummy data. Integrate workforce attendance, quality system, safety register and material tracker to activate.</div>
+    <div class="sec"><div class="sh"><span class="st">Operational KPIs</span></div><div class="kg k5">
+      <div class="kc b"><div class="kl">SPI</div><div class="kv">0.77</div><div class="km">Target ≥ 1.0</div><span class="kp p-b">Critical</span><div class="kb"><div class="kbf" style="width:77%;background:var(--R)"></div></div></div>
+      <div class="kc w"><div class="kl">CPI ★</div><div class="kv">0.94</div><div class="km">Target ≥ 1.0</div><span class="kp p-w">Overspend risk</span><div class="kb"><div class="kbf" style="width:94%;background:var(--A)"></div></div></div>
+      <div class="kc b"><div class="kl">Progress vs plan</div><div class="kv">12.6<small style="font-size:12px">%</small></div><div class="km">Plan: 22% by Apr</div><span class="kp p-b">9.4 pts behind</span><div class="kb"><div class="kbf" style="width:57%;background:var(--R)"></div></div></div>
+      <div class="kc w"><div class="kl">Quality score ★</div><div class="kv">84<small style="font-size:12px">%</small></div><div class="km">Target ≥ 90%</div><span class="kp p-w">Below threshold</span><div class="kb"><div class="kbf" style="width:84%;background:var(--A)"></div></div></div>
+      <div class="kc b"><div class="kl">Design SLA</div><div class="kv">38<small style="font-size:12px">%</small></div><div class="km">Design tasks on schedule</div><span class="kp p-b">Critical bottleneck</span><div class="kb"><div class="kbf" style="width:38%;background:var(--R)"></div></div></div>
+    </div></div>
+    <div class="g22">
+      <div class="sec"><div class="sh"><span class="st">Cumulative completion trend ★</span><span class="dtag d">Dummy</span></div><div class="cw"><canvas id="trendChart"></canvas></div><div class="leg"><span><span class="ld" style="background:#0f6d50"></span>Actual</span><span><span class="ld" style="background:#d1d5db"></span>Planned</span></div></div>
+      <div class="sec"><div class="sh"><span class="st">Category completion %</span><span class="dtag">Live</span></div><div class="cw"><canvas id="readinessChart"></canvas></div></div>
+    </div>
+    <div class="g22">
+      <div class="sec"><div class="sh"><span class="st">Workforce deployment ★</span><span class="dtag d">Dummy</span></div><div class="cw sm"><canvas id="wfChart"></canvas></div><div class="m3"><div class="mn"><div class="mv">218</div><div class="ml">On site today</div></div><div class="mn"><div class="mv">94%</div><div class="ml">Vs plan</div></div><div class="mn"><div class="mv">232</div><div class="ml">Peak this month</div></div></div></div>
+      <div class="sec"><div class="sh"><span class="st">Safety metrics ★</span><span class="dtag d">Dummy</span></div><div class="cw sm"><canvas id="safetyChart"></canvas></div><div class="m4"><div class="mn"><div class="mv">0.8</div><div class="ml">LTIFR</div></div><div class="mn"><div class="mv">2</div><div class="ml">Near misses MTD</div></div><div class="mn"><div class="mv">88%</div><div class="ml">Toolbox talks</div></div><div class="mn"><div class="mv">1</div><div class="ml">LTI YTD</div></div></div></div>
+    </div>
+  </div>
+
+  <!-- FINANCE PANE -->
+  <div id="pane-finance" class="pane">
+    <div class="abar a">★ All cost/payment data is dummy. Only excavation (₹30L) has real BOQ pricing from the construction tool. Upload full BOQ to activate CPI and EVM metrics.</div>
+
+    <!-- Construction EVM KPIs -->
+    <div class="sec"><div class="sh"><span class="st">Earned value management — construction KPIs ★</span><span class="dtag d">Dummy supplement</span></div>
+      <div class="kg k4">
+        <div class="kc w"><div class="kl">Cost performance index (CPI)</div><div class="kv">0.94</div><div class="km">AC ₹112 Cr · EV ₹105 Cr</div><span class="kp p-w">₹7 Cr overspend</span><div class="kb"><div class="kbf" style="width:94%;background:var(--A)"></div></div></div>
+        <div class="kc b"><div class="kl">Schedule perf. index (SPI)</div><div class="kv">0.77</div><div class="km">EV ₹105 Cr · PV ₹136 Cr</div><span class="kp p-b">₹31 Cr behind plan</span><div class="kb"><div class="kbf" style="width:77%;background:var(--R)"></div></div></div>
+        <div class="kc b"><div class="kl">Cost variance (CV)</div><div class="kv">-₹7 Cr</div><div class="km">EV – AC · Target: 0</div><span class="kp p-b">Over budget</span><div class="kb"><div class="kbf" style="width:65%;background:var(--R)"></div></div></div>
+        <div class="kc b"><div class="kl">Schedule variance (SV)</div><div class="kv">-₹31 Cr</div><div class="km">EV – PV · Behind plan</div><span class="kp p-b">Recovery needed</span><div class="kb"><div class="kbf" style="width:70%;background:var(--R)"></div></div></div>
+      </div>
+      <div class="kg k4" style="margin-top:10px">
+        <div class="kc i"><div class="kl">Budget at completion (BAC)</div><div class="kv">₹148 Cr</div><div class="km">Total approved BOQ</div><span class="kp p-i">All packages</span><div class="kb"><div class="kbf" style="width:100%;background:var(--navy)"></div></div></div>
+        <div class="kc w"><div class="kl">Estimate at completion (EAC)</div><div class="kv">₹157 Cr</div><div class="km">BAC ÷ CPI = ₹157 Cr</div><span class="kp p-w">₹9 Cr overrun forecast</span><div class="kb"><div class="kbf" style="width:85%;background:var(--A)"></div></div></div>
+        <div class="kc w"><div class="kl">Estimate to complete (ETC)</div><div class="kv">₹45 Cr</div><div class="km">EAC – AC remaining</div><span class="kp p-w">Cash required</span><div class="kb"><div class="kbf" style="width:60%;background:var(--A)"></div></div></div>
+        <div class="kc b"><div class="kl">Variance at completion (VAC)</div><div class="kv">-₹9 Cr</div><div class="km">BAC – EAC</div><span class="kp p-b">Projected overrun</span><div class="kb"><div class="kbf" style="width:70%;background:var(--R)"></div></div></div>
+      </div>
+    </div>
+
+    <!-- BOQ vs Actual -->
+    <div class="g32">
+      <div class="sec"><div class="sh"><span class="st">BOQ vs actual cost — by work category (₹ L) ★</span><span class="dtag d">Dummy</span></div><div class="cw lg"><canvas id="boqChart"></canvas></div><div class="leg"><span><span class="ld" style="background:#d1d5db;border:1px solid #b0ada4"></span>BOQ budget</span><span><span class="ld" style="background:#1e3a5f"></span>Work certified</span><span><span class="ld" style="background:#0f6d50"></span>Paid to contractor</span></div></div>
+      <div>
+        <div class="sec"><div class="sh"><span class="st">Cost breakdown by category ★</span></div><div class="cw sm"><canvas id="costPieChart"></canvas></div><div class="leg" id="cost-pie-leg"></div></div>
+        <div class="sec" style="margin-top:0"><div class="sh"><span class="st">Cost per sq ft — actual vs budget ★</span></div>
+          <div class="kg k3" style="margin-bottom:0">
+            <div class="mn"><div class="mv" style="color:var(--R)">₹4,850</div><div class="ml">Actual cost / sqft</div></div>
+            <div class="mn"><div class="mv" style="color:var(--t3)">₹4,600</div><div class="ml">Budgeted / sqft</div></div>
+            <div class="mn"><div class="mv" style="color:var(--A)">+5.4%</div><div class="ml">Cost overrun</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contractor payments -->
+    <div class="sec"><div class="sh"><span class="st">Contractor payment ledger ★</span><span class="dtag d">Dummy</span></div>
+      <table class="tbl">
+        <thead><tr><th>Contractor / Package</th><th>Category</th><th>BOQ Value (₹L)</th><th>Work Certified (₹L)</th><th>Paid to Date (₹L)</th><th>Outstanding (₹L)</th><th>Retention (₹L)</th><th>Status</th></tr></thead>
+        <tbody id="contractor-table"></tbody>
+      </table>
+    </div>
+
+    <!-- Cash flow + Change orders -->
+    <div class="g22">
+      <div class="sec"><div class="sh"><span class="st">Construction cash flow — planned vs actual (₹ L) ★</span><span class="dtag d">Dummy</span></div>
+        <div class="cw"><canvas id="cashflowChart"></canvas></div>
+        <div class="m3"><div class="mn"><div class="mv">₹112 Cr</div><div class="ml">Total spent to date</div></div><div class="mn"><div class="mv">₹36 Cr</div><div class="ml">Remaining to spend</div></div><div class="mn"><div class="mv">71%</div><div class="ml">Budget utilised</div></div></div>
+      </div>
+      <div class="sec"><div class="sh"><span class="st">Change orders — value &amp; category (₹ L) ★</span><span class="dtag d">Dummy</span></div>
+        <div class="cw"><canvas id="coChart"></canvas></div>
+        <div class="m3"><div class="mn"><div class="mv">47</div><div class="ml">Total change orders</div></div><div class="mn"><div class="mv">₹108 L</div><div class="ml">Total CO value</div></div><div class="mn"><div class="mv">6.2%</div><div class="ml">CO rate (% of BOQ)</div></div></div>
+      </div>
+    </div>
+
+    <!-- Material procurement -->
+    <div class="sec"><div class="sh"><span class="st">Material procurement status — key items ★</span><span class="dtag d">Dummy</span></div>
+      <table class="tbl">
+        <thead><tr><th>Material</th><th>Unit</th><th>BOQ Qty</th><th>PO Raised</th><th>GRN Received</th><th>Pending</th><th>Rate (₹/unit)</th><th>PO Value (₹L)</th><th>Paid (₹L)</th></tr></thead>
+        <tbody id="material-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- DATA GAPS PANE -->
+  <div id="pane-gaps" class="pane">
+    <div class="abar i">ℹ The construction tool extract powers the Progress and Schedule tabs. All other KPIs require additional data feeds listed below.</div>
+    <div class="sec"><div class="sh"><span class="st">Available from construction tool today</span><span class="dtag">Live</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px">
+        <div class="gc-card avail"><div style="font-size:20px;margin-bottom:8px">✓</div><div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--G)">Task progress & WBS hierarchy</div><div style="font-size:11px;color:var(--t2);line-height:1.65">659 tasks, L1–L5 WBS, progress %, status, parent-leaf structure.</div><div style="font-size:10px;color:var(--t4);margin-top:8px;padding-top:8px;border-top:1px solid rgba(15,109,80,.2)">Fields: ProgressPct, Status, Level, ParentLeaf</div></div>
+        <div class="gc-card avail"><div style="font-size:20px;margin-bottom:8px">✓</div><div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--G)">Planned vs actual dates & delay</div><div style="font-size:11px;color:var(--t2);line-height:1.65">Start/end dates, actual dates, duration, delay string per task.</div><div style="font-size:10px;color:var(--t4);margin-top:8px;padding-top:8px;border-top:1px solid rgba(15,109,80,.2)">Fields: StartDate, EndDate, ActualStart, ActualEnd, Delay</div></div>
+        <div class="gc-card part"><div style="font-size:20px;margin-bottom:8px">⚑</div><div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--A)">Cost / BOQ — 1 of 659 tasks priced</div><div style="font-size:11px;color:var(--t2);line-height:1.65">Excavation only (₹30L). CurrentPrice/TotalPrice fields exist but blank for 658 tasks.</div><div style="font-size:10px;color:var(--t4);margin-top:8px;padding-top:8px;border-top:1px solid rgba(161,98,7,.2)">Fix: Upload full BOQ via Data Upload tab</div></div>
+      </div>
+    </div>
+    <div class="sec"><div class="sh"><span class="st">Data required — missing feeds</span><span class="dtag g">✕ Missing</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">
+        <div class="gc-card miss"><div style="font-size:18px;margin-bottom:8px">✕</div><div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--R)">Full BOQ with task-level budgets</div><div style="font-size:11px;color:var(--t2);line-height:1.65">Unlocks CPI, EAC, EVM, cost variance. Upload to Data Upload tab.</div></div>
+        <div class="gc-card miss"><div style="font-size:18px;margin-bottom:8px">✕</div><div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--R)">Actual bills & GRN from Tally</div><div style="font-size:11px;color:var(--t2);line-height:1.65">Subcontractor invoices mapped per WBS. Source: Tally ERP → monthly export.</div></div>
+        <div class="gc-card miss"><div style="font-size:18px;margin-bottom:8px">✕</div><div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--R)">Daily workforce attendance</div><div style="font-size:11px;color:var(--t2);line-height:1.65">Headcount by trade. Source: Biometric / HR module → daily.</div></div>
+        <div class="gc-card miss"><div style="font-size:18px;margin-bottom:8px">✕</div><div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--R)">Quality NCRs & inspections</div><div style="font-size:11px;color:var(--t2);line-height:1.65">NCR log, pass/fail per task. Source: QMS → link to TaskID.</div></div>
+        <div class="gc-card miss"><div style="font-size:18px;margin-bottom:8px">✕</div><div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--R)">Safety incidents & LTIFR</div><div style="font-size:11px;color:var(--t2);line-height:1.65">Incident log, man-hours, LTI count. Source: HSE register → daily.</div></div>
+        <div class="gc-card miss"><div style="font-size:18px;margin-bottom:8px">✕</div><div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--R)">RFI & change order register</div><div style="font-size:11px;color:var(--t2);line-height:1.65">Submission/response date, cost per CO. Maintain in construction tool.</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div><!-- /view-project -->
+
+<!-- ═══════════════════════════════════════════════
+     VIEW 3 — DATA UPLOAD TEMPLATE
+════════════════════════════════════════════════ -->
+<div id="view-upload" class="view">
+<div class="wrap">
+
+  <div class="topbar">
+    <div>
+      <div class="brand">Golden Abodes · <span>Data Upload Template</span></div>
+      <div class="sub">Structured field definitions for all dashboard data feeds</div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" onclick="downloadTemplate()">↓ Download Template CSV</button>
+    </div>
+  </div>
+
+  <div class="abar g">✓ Use this template to prepare your weekly/monthly data files. Each tab below corresponds to a separate upload sheet. Required fields must be populated for the dashboard to function. Optional fields enhance additional KPIs.</div>
+
+  <!-- TABS for upload sheets -->
+  <div class="tabs" id="uploadTabBar">
+    <button class="tab active" data-utab="task">1 · Task Progress</button>
+    <button class="tab" data-utab="boq">2 · BOQ & Cost</button>
+    <button class="tab" data-utab="contractor">3 · Contractor Payments</button>
+    <button class="tab" data-utab="workforce">4 · Workforce</button>
+    <button class="tab" data-utab="material">5 · Materials & PO</button>
+    <button class="tab" data-utab="safety">6 · Safety</button>
+    <button class="tab" data-utab="rfi">7 · RFI & Change Orders</button>
+    <button class="tab" data-utab="sales">8 · Sales & Collections</button>
+  </div>
+
+  <div id="upane-task" class="pane active"></div>
+  <div id="upane-boq" class="pane"></div>
+  <div id="upane-contractor" class="pane"></div>
+  <div id="upane-workforce" class="pane"></div>
+  <div id="upane-material" class="pane"></div>
+  <div id="upane-safety" class="pane"></div>
+  <div id="upane-rfi" class="pane"></div>
+  <div id="upane-sales" class="pane"></div>
+
+</div>
+</div><!-- /view-upload -->
+
+<script>
+/* ═══════════════════════════════════════════════
+   CHART PALETTE — designed for white backgrounds
+════════════════════════════════════════════════ */
+const C={
+  navy:'#1e3a5f',navyF:'rgba(30,58,95,.12)',
+  blue:'#1d4ed8',blueF:'rgba(29,78,216,.1)',
+  green:'#0f6d50',greenF:'rgba(15,109,80,.12)',
+  amber:'#a16207',amberF:'rgba(161,98,7,.1)',
+  red:'#b91c1c',redF:'rgba(185,28,28,.08)',
+  gold:'#96690b',goldF:'rgba(150,105,11,.1)',
+  teal:'#0d7a6e',purple:'#6d28d9',
+  gray:'#9ca3af',grid:'rgba(0,0,0,.07)',tick:'#9ca3af',
+  f:'DM Sans,system-ui,sans-serif'
+};
+const tt={backgroundColor:'#fff',titleColor:'#111827',bodyColor:'#374151',borderColor:'#e4e2dc',borderWidth:1,padding:10,titleFont:{weight:'600',family:C.f},bodyFont:{family:C.f}};
+const gO=(ex={})=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:tt},scales:{x:{grid:{color:C.grid},ticks:{color:C.tick,font:{size:11,family:C.f}},...(ex.sx||{})},y:{grid:{color:C.grid},ticks:{color:C.tick,font:{size:11,family:C.f}},...(ex.sy||{})}},...ex});
+const R={};
+function dc(id){if(R[id]){R[id].destroy();delete R[id]}}
+function rc(id,ch){R[id]=ch;return ch}
+
+/* ═══════════════════════════════════════════════
+   PROJECT DATA
+════════════════════════════════════════════════ */
+const PROJECTS={
+  p1:{name:'Anantam Signature',sub:'E Building',tasks:659,done:53,ip:22,ns:584,spi:0.77,cpi:0.94,completion:12.6,boq:148,spent:112,maxDelay:241,color:'#1e3a5f'},
+  p2:{name:'GA Residences',sub:'Pimpri',tasks:420,done:182,ip:38,ns:200,spi:0.94,cpi:0.96,completion:69,boq:95,spent:62,maxDelay:45,color:'#96690b'},
+  p3:{name:'GA Heights',sub:'Mumbai',tasks:310,done:198,ip:25,ns:87,spi:0.91,cpi:0.93,completion:74,boq:120,spent:82,maxDelay:67,color:'#0f6d50'},
+  p4:{name:'GA Villas',sub:'Goa',tasks:180,done:82,ip:18,ns:80,spi:0.94,cpi:0.97,completion:52,boq:68,spent:34,maxDelay:28,color:'#6d28d9'}
+};
+
+const L1=[
+  {n:'Excavation',cat:'Civil',p:100,s:'Completed',d:132},
+  {n:'Drawing (overall)',cat:'Design',p:24.4,s:'In Progress',d:228},
+  {n:'RCC Basement–5th slab',cat:'Civil',p:73.74,s:'In Progress',d:0},
+  {n:'Basement Floor',cat:'Civil',p:54.25,s:'In Progress',d:0},
+  {n:'Glass Work',cat:'General',p:7.69,s:'In Progress',d:1},
+  {n:'BBM / Masonry Work',cat:'Masonry',p:0,s:'Not Started',d:0},
+  {n:'External Plaster Work',cat:'Plaster',p:0,s:'Not Started',d:0},
+  {n:'Internal Plaster Work',cat:'Plaster',p:0,s:'Not Started',d:0},
+  {n:'Waterproofing Work',cat:'Waterproofing',p:0,s:'Not Started',d:0},
+  {n:'Electrical Work',cat:'Electrical',p:0,s:'Not Started',d:0},
+  {n:'Plumbing Work',cat:'Plumbing',p:0,s:'Not Started',d:0},
+  {n:'Tile Work',cat:'Tiling',p:0,s:'Not Started',d:0},
+  {n:'Painting Work',cat:'General',p:0,s:'Not Started',d:0},
+  {n:'Sliding Door',cat:'General',p:0,s:'Not Started',d:0},
+  {n:'Windows',cat:'General',p:0,s:'Not Started',d:0},
+  {n:'Wooden Door & Lobby Cladding',cat:'General',p:0,s:'Not Started',d:0},
+  {n:'Common Building Activities',cat:'General',p:0,s:'Not Started',d:156},
+  {n:'Cleaning',cat:'Cleaning',p:0,s:'Not Started',d:105},
+  {n:'Handover',cat:'Closing',p:0,s:'Not Started',d:90}
+];
+const CATS=[
+  {c:'Civil',t:67,d:26,i:13,n:28,avg:51.2,ad:46},
+  {c:'Design',t:19,d:4,i:5,n:10,avg:36.8,ad:85},
+  {c:'Electrical',t:72,d:0,i:0,n:72,avg:0,ad:110},
+  {c:'General',t:212,d:23,i:4,n:185,avg:11.4,ad:95},
+  {c:'Masonry',t:17,d:0,i:0,n:17,avg:0,ad:0},
+  {c:'Plaster',t:35,d:0,i:0,n:35,avg:0,ad:0},
+  {c:'Plumbing',t:62,d:0,i:0,n:62,avg:0,ad:0},
+  {c:'Waterproofing',t:50,d:0,i:0,n:50,avg:0,ad:0},
+  {c:'Tiling',t:121,d:0,i:0,n:121,avg:0,ad:0},
+  {c:'Cleaning',t:3,d:0,i:0,n:3,avg:0,ad:98},
+  {c:'Painting',t:1,d:0,i:0,n:1,avg:0,ad:146}
+];
+const ACTIVE=[
+  {n:'Section drawing all levels',c:'Design',p:50,d:88},{n:'2nd slab design',c:'Design',p:65,d:0},
+  {n:'Ret wall Drawing',c:'Design',p:70,d:88},{n:'Water Tank Drawing',c:'Design',p:26,d:88},
+  {n:'1st slab shuttering',c:'Civil',p:59.9,d:9},{n:'1st slab concrete',c:'Civil',p:80,d:11},
+  {n:'Column steel plinth–1st slab',c:'Civil',p:89,d:8},{n:'2nd slab concrete',c:'Civil',p:25,d:8},
+  {n:'2nd slab shuttering',c:'Civil',p:75,d:12},{n:'R2 retaining wall concrete',c:'Civil',p:44.7,d:1},
+  {n:'R2 retaining wall steel',c:'Civil',p:73.1,d:6},{n:'R2 retaining wall shuttering',c:'Civil',p:56,d:4},
+  {n:'Soling work',c:'Civil',p:70,d:0}
+];
+const TOPDELAY=[
+  {n:'Architecture Drawing',c:'Design',p:11.6,d:241,s:'In Progress'},
+  {n:'Drawing (overall)',c:'General',p:24.4,d:228,s:'In Progress'},
+  {n:'Center line drawing',c:'Design',p:100,d:210,s:'Completed'},
+  {n:'R1 Retaining wall steel',c:'Civil',p:100,d:176,s:'Completed'},
+  {n:'Common Building Activities',c:'General',p:0,d:156,s:'Not Started'},
+  {n:'Lift Lobby',c:'Civil',p:0,d:156,s:'Not Started'},
+  {n:'External Plaster',c:'Painting',p:0,d:146,s:'Not Started'},
+  {n:'Staircase Finishing',c:'Civil',p:0,d:144,s:'Not Started'},
+  {n:'External Painting',c:'Civil',p:0,d:121,s:'Not Started'},
+  {n:'Louver Fixing',c:'Electrical',p:0,d:110,s:'Not Started'},
+  {n:'Lights & LED Fittings',c:'General',p:0,d:105,s:'Not Started'},
+  {n:'Cleaning',c:'Cleaning',p:0,d:105,s:'Not Started'},
+  {n:'Section drawing all levels',c:'Design',p:50,d:88,s:'In Progress'},
+  {n:'Ret wall Drawing',c:'Design',p:70,d:88,s:'In Progress'},
+  {n:'Water Tank Drawing',c:'Design',p:26,d:88,s:'In Progress'}
+];
+const CONTRACTORS=[
+  {name:'Namdev Shingulwar & Co.',cat:'Civil / RCC',boq:4200,cert:3960,paid:3600,ret:198},
+  {name:'Krunal Thorat Const.',cat:'Civil / Structural',boq:1800,cert:1620,paid:1440,ret:81},
+  {name:'MEP Systems Pvt Ltd',cat:'MEP (Electrical)',boq:1200,cert:0,paid:0,ret:0},
+  {name:'AquaTech Plumbing',cat:'Plumbing',boq:680,cert:0,paid:0,ret:0},
+  {name:'Flooring Solutions',cat:'Tiling / Flooring',boq:920,cert:0,paid:0,ret:0},
+  {name:'Minal Firake Associates',cat:'Design / Drawings',boq:180,cert:120,paid:100,ret:6},
+  {name:'GlassTech Facades',cat:'Glass / Facade',boq:320,cert:22,paid:18,ret:1}
+];
+const MATERIALS=[
+  {m:'Ready Mix Concrete (M30)',u:'cum',boq:2400,po:2400,grn:1820,pend:580,rate:7800,poval:1872,paid:1420},
+  {m:'TMT Steel Fe500 (12mm)',u:'MT',boq:280,po:280,grn:198,pend:82,rate:62000,poval:1736,paid:1228},
+  {m:'TMT Steel Fe500 (16mm)',u:'MT',boq:180,po:180,grn:122,pend:58,rate:62000,poval:1116,paid:756},
+  {m:'River Sand (plaster grade)',u:'brass',boq:420,po:300,grn:180,pend:240,rate:4200,poval:1764,paid:756},
+  {m:'AAC Blocks (6")',u:'cum',boq:890,po:0,grn:0,pend:890,rate:4800,poval:0,paid:0},
+  {m:'Vitrified Tiles (600x600)',u:'sqft',boq:48000,po:0,grn:0,pend:48000,rate:65,poval:0,paid:0},
+  {m:'CPVC Plumbing Pipes',u:'rmt',boq:8400,po:0,grn:0,pend:8400,rate:180,poval:0,paid:0},
+  {m:'PVC Conduits (electrical)',u:'rmt',boq:12000,po:0,grn:0,pend:12000,rate:42,poval:0,paid:0}
+];
+const CO_CATS=['Soil condition','Design revision','Client change','Regulatory','Supply chain'];
+const CO_VALS=[32,28,21,15,12];
+const BOQ_CATS=['Civil / RCC','Foundations','MEP Electrical','Plumbing','Tiling','Plaster','Glass / Facade','Design','Other'];
+const BOQ_BUDGET=[4200,1800,1200,680,920,540,320,180,160];
+const BOQ_CERT  =[3960,1620,   0,  0,  0,  0, 22,120, 80];
+const BOQ_PAID  =[3600,1440,   0,  0,  0,  0, 18,100, 60];
+
+/* ═══════════════════════════════════════════════
+   HELPERS
+════════════════════════════════════════════════ */
+function scC(s){return s==='Completed'?C.green:s==='In Progress'?C.amber:'#d1d5db'}
+function pc(p){return p>=80?C.green:p>=50?C.amber:C.red}
+function db(d){if(!d)return'<span class="bdg bgg">On schedule</span>';if(d<=14)return`<span class="bdg bga">${d}d</span>`;return`<span class="bdg bgr">${d}d</span>`}
+function fL(v){return v.toLocaleString('en-IN')}
+
+/* ═══════════════════════════════════════════════
+   VIEW SWITCHING
+════════════════════════════════════════════════ */
+const rendered=new Set();
+function showView(id,btn){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-view-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id==='portfolio'&&!rendered.has('portfolio')){renderPortfolio();rendered.add('portfolio');}
+  if(id==='project'&&!rendered.has('project-progress')){renderProgress();rendered.add('project-progress');}
+}
+
+/* ═══════════════════════════════════════════════
+   PROJECT DROPDOWN
+════════════════════════════════════════════════ */
+function onProjChange(v){
+  const p=PROJECTS[v];
+  document.getElementById('proj-brand').innerHTML=`${p.name} · <span>${p.sub}</span>`;
+  document.getElementById('proj-sub').innerHTML=`<span class="pulse"></span>Construction data · 09 Apr 2026 · ${p.tasks} tasks`;
+}
+
+/* ═══════════════════════════════════════════════
+   TAB SWITCHING (project)
+════════════════════════════════════════════════ */
+const PROJ_RENDER={progress:renderProgress,schedule:renderSchedule,ops:renderOps,finance:renderFinance,gaps:null};
+document.getElementById('projTabBar').addEventListener('click',e=>{
+  const btn=e.target.closest('.tab'); if(!btn)return;
+  const id=btn.dataset.pane;
+  document.querySelectorAll('#pane-'+id.replace(id,id)).forEach(()=>{});
+  document.querySelectorAll('#view-project .pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('#projTabBar .tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('pane-'+id).classList.add('active');
+  btn.classList.add('active');
+  const key='project-'+id;
+  if(!rendered.has(key)&&PROJ_RENDER[id]){setTimeout(()=>{PROJ_RENDER[id]();rendered.add(key);},30);}
+});
+
+/* TAB SWITCHING (upload) */
+document.getElementById('uploadTabBar').addEventListener('click',e=>{
+  const btn=e.target.closest('.tab'); if(!btn)return;
+  const id=btn.dataset.utab;
+  document.querySelectorAll('#view-upload .pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('#uploadTabBar .tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('upane-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(!rendered.has('upload-'+id)){renderUploadPane(id);rendered.add('upload-'+id);}
+});
+
+/* ═══════════════════════════════════════════════
+   PORTFOLIO RENDER
+════════════════════════════════════════════════ */
+function renderPortfolio(){
+  const pids=['p1','p2','p3','p4'];
+  const pnames=['Anantam E Bldg','GA Residences','GA Heights','GA Villas'];
+
+  // project cards
+  document.getElementById('proj-cards').innerHTML=pids.map(pid=>{
+    const p=PROJECTS[pid];
+    const cls=pid;
+    return`<div class="proj-card ${cls}" onclick="drillProject('${pid}')">
+      <div class="proj-card-name">${p.name}</div>
+      <div class="proj-card-meta">${p.sub} · ${p.tasks} tasks</div>
+      <div class="proj-card-stat"><span class="proj-stat-label">Completion</span><span class="proj-stat-val" style="color:${p.completion>60?C.green:p.completion>40?C.amber:C.red}">${p.completion}%</span></div>
+      <div class="pt" style="margin-bottom:10px"><div class="pf" style="width:${p.completion}%;background:${p.color}"></div></div>
+      <div class="proj-card-stat"><span class="proj-stat-label">SPI</span><span class="proj-stat-val" style="color:${p.spi>=1?C.green:p.spi>=0.90?C.amber:C.red}">${p.spi}</span></div>
+      <div class="proj-card-stat"><span class="proj-stat-label">CPI ★</span><span class="proj-stat-val" style="color:${p.cpi>=1?C.green:p.cpi>=0.93?C.amber:C.red}">${p.cpi}</span></div>
+      <div class="proj-card-stat" style="margin-top:8px"><span class="proj-stat-label">BOQ ★</span><span class="proj-stat-val">₹${p.boq} Cr</span></div>
+      <div class="proj-card-stat"><span class="proj-stat-label">Spent ★</span><span class="proj-stat-val">₹${p.spent} Cr</span></div>
+    </div>`;
+  }).join('');
+
+  // SPI/CPI chart
+  dc('port-spi-chart');
+  rc('port-spi-chart',new Chart(document.getElementById('port-spi-chart'),{
+    type:'bar',
+    data:{labels:pnames,datasets:[
+      {label:'SPI',data:pids.map(p=>PROJECTS[p].spi),backgroundColor:'rgba(30,58,95,.7)',borderRadius:4},
+      {label:'CPI',data:pids.map(p=>PROJECTS[p].cpi),backgroundColor:'rgba(150,105,11,.6)',borderRadius:4},
+      {label:'Target',data:[1,1,1,1],type:'line',borderColor:'rgba(185,28,28,.5)',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false}
+    ]},
+    options:gO({sy:{min:0.7,max:1.1,sx:{callback:v=>v.toFixed(2)}}})
+  }));
+
+  // Completion chart
+  dc('port-prog-chart');
+  rc('port-prog-chart',new Chart(document.getElementById('port-prog-chart'),{
+    type:'bar',
+    data:{labels:pnames,datasets:[
+      {label:'Completion %',data:pids.map(p=>PROJECTS[p].completion),backgroundColor:pids.map(p=>PROJECTS[p].color+'bb'),borderRadius:4}
+    ]},
+    options:gO({sy:{min:0,max:100,callback:v=>v+'%'}})
+  }));
+
+  // Cost chart
+  dc('port-cost-chart');
+  rc('port-cost-chart',new Chart(document.getElementById('port-cost-chart'),{
+    type:'bar',
+    data:{labels:pnames,datasets:[
+      {label:'BOQ Budget',data:pids.map(p=>PROJECTS[p].boq),backgroundColor:'rgba(0,0,0,.1)',borderRadius:3},
+      {label:'Actual Spent',data:pids.map(p=>PROJECTS[p].spent),backgroundColor:'rgba(30,58,95,.65)',borderRadius:3}
+    ]},
+    options:gO({sy:{ticks:{callback:v=>'₹'+v+' Cr'}}})
+  }));
+
+  // Delay chart
+  dc('port-delay-chart');
+  rc('port-delay-chart',new Chart(document.getElementById('port-delay-chart'),{
+    type:'bar',
+    data:{labels:pnames,datasets:[{label:'Max delay (days)',data:pids.map(p=>PROJECTS[p].maxDelay),backgroundColor:pids.map(p=>PROJECTS[p].maxDelay>100?'rgba(185,28,28,.65)':p.maxDelay>50?'rgba(161,98,7,.6)':'rgba(15,109,80,.65)').map((x,i)=>PROJECTS[pids[i]].maxDelay>100?'rgba(185,28,28,.65)':PROJECTS[pids[i]].maxDelay>50?'rgba(161,98,7,.6)':'rgba(15,109,80,.65)'),borderRadius:4}]},
+    options:gO({sy:{ticks:{callback:v=>v+'d'}}})
+  }));
+
+  // Portfolio table
+  document.getElementById('port-table').innerHTML=`<thead><tr><th>Project</th><th>Tasks</th><th>Completion</th><th>SPI</th><th>CPI ★</th><th>BOQ ★ (₹ Cr)</th><th>Spent ★ (₹ Cr)</th><th>Max Delay</th><th>Action</th></tr></thead><tbody>${
+    pids.map(pid=>{const p=PROJECTS[pid];return`<tr>
+      <td>${p.name} — ${p.sub}</td>
+      <td>${p.tasks}</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div style="width:60px;height:5px;background:var(--b1);border-radius:99px;overflow:hidden"><div style="height:100%;width:${p.completion}%;background:${p.color};border-radius:99px"></div></div><span>${p.completion}%</span></div></td>
+      <td style="font-weight:700;color:${p.spi>=1?C.green:p.spi>=0.90?C.amber:C.red}">${p.spi}</td>
+      <td style="font-weight:700;color:${p.cpi>=1?C.green:p.cpi>=0.93?C.amber:C.red}">${p.cpi}</td>
+      <td>${p.boq}</td><td>${p.spent}</td>
+      <td style="color:${p.maxDelay>100?C.red:p.maxDelay>50?C.amber:C.green};font-weight:700">+${p.maxDelay}d</td>
+      <td><button class="btn" style="padding:4px 10px;font-size:10px;height:26px" onclick="drillProject('${pid}')">View →</button></td>
+    </tr>`}).join('')
+  }</tbody>`;
+}
+
+function drillProject(pid){
+  document.getElementById('projSel').value=pid;
+  onProjChange(pid);
+  showView('project',document.querySelector('.nav-view-btn:nth-child(3)'));
+}
+
+/* ═══════════════════════════════════════════════
+   PROGRESS RENDER
+════════════════════════════════════════════════ */
+function renderProgress(){
+  document.getElementById('wbs-list').innerHTML=L1.map(t=>`
+    <div class="wn">
+      <div style="width:8px;height:8px;border-radius:50%;background:${scC(t.s)};flex-shrink:0;margin-top:4px"></div>
+      <div style="flex:1;min-width:0"><div class="wn-name">${t.n}</div><div class="wn-cat">${t.cat}</div></div>
+      <div style="width:80px;flex-shrink:0"><div class="pt"><div class="pf" style="width:${t.p}%;background:${scC(t.s)}"></div></div></div>
+      <div style="width:34px;font-size:11px;font-weight:700;text-align:right;color:${scC(t.s)}">${t.p}%</div>
+      <div style="width:44px;font-size:10px;text-align:right;color:${t.d>0?C.red:'#d1d5db'}">${t.d>0?'+'+t.d+'d':''}</div>
+    </div>`).join('');
+
+  dc('catChart');
+  rc('catChart',new Chart(document.getElementById('catChart'),{
+    type:'bar',
+    data:{labels:CATS.map(c=>c.c),datasets:[
+      {label:'Completed',data:CATS.map(c=>c.d),backgroundColor:C.green,borderRadius:3,stack:'s'},
+      {label:'In Progress',data:CATS.map(c=>c.i),backgroundColor:C.amber,stack:'s'},
+      {label:'Not started',data:CATS.map(c=>c.n),backgroundColor:'#e5e7eb',stack:'s'}
+    ]},
+    options:gO({sx:{stacked:true,ticks:{maxRotation:38,font:{size:10,family:C.f}}},sy:{stacked:true}})
+  }));
+
+  document.getElementById('active-body').innerHTML=ACTIVE.map(t=>`
+    <tr data-cat="${t.c}">
+      <td>${t.n}</td>
+      <td><span class="bdg ${t.c==='Civil'?'bgb':'bgp'}">${t.c}</span></td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:5px;background:var(--b1);border-radius:99px;overflow:hidden;min-width:60px"><div style="height:100%;width:${t.p}%;background:${pc(t.p)};border-radius:99px"></div></div><span style="font-size:11px;font-weight:700;color:${pc(t.p)};min-width:36px">${t.p}%</span></div></td>
+      <td>${db(t.d)}</td>
+      <td style="color:${t.d>20?C.red:t.d>0?C.amber:C.green}">${t.d>20?'⚠ Recovery needed':t.d>0?'Watch':'On track'}</td>
+    </tr>`).join('');
+
+  document.getElementById('cat-prog-list').innerHTML=CATS.map(c=>`
+    <div class="pr">
+      <div class="pl">${c.c} <small style="color:var(--t4)">(${c.t})</small></div>
+      <div class="pt"><div class="pf" style="width:${c.d/c.t*100}%;background:var(--G)"></div></div>
+      <div class="pv" style="color:${c.avg>50?C.green:c.avg>20?C.amber:C.red}">${Math.round(c.avg)}%</div>
+      <div class="pd ${c.ad>100?'db':c.ad>50?'dw':c.ad>0?'dw':'dok'}">${c.ad>0?`avg +${c.ad}d`:'No delays'}</div>
+    </div>`).join('');
+}
+
+/* ═══════════════════════════════════════════════
+   SCHEDULE RENDER
+════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════
+   UPCOMING ACTIVITIES DATA
+   Reference date: 09 Apr 2026 = new Date(2026,3,9)
+   Month index is 0-based: Jan=0, Apr=3, May=4
+════════════════════════════════════════════════ */
+const TODAY = new Date(2026,3,9);
+const UPCOMING = [
+  /* ── CIVIL ── */
+  {id:'TSK000044',n:'1st slab shuttering',cat:'Civil',ps:new Date(2026,3,1),pe:new Date(2026,3,16),prog:59.9,s:'In Progress',delay:9,mem:'Namdev S'},
+  {id:'TSK000045',n:'1st slab concrete (M30)',cat:'Civil',ps:new Date(2026,3,5),pe:new Date(2026,3,12),prog:80,s:'In Progress',delay:11,mem:'Namdev S'},
+  {id:'TSK000049',n:'Column steel — plinth to 1st slab',cat:'Civil',ps:new Date(2026,3,1),pe:new Date(2026,3,10),prog:89,s:'In Progress',delay:8,mem:'Krunal T'},
+  {id:'TSK000051',n:'2nd slab programme (overall)',cat:'Civil',ps:new Date(2026,3,8),pe:new Date(2026,3,28),prog:35.2,s:'In Progress',delay:14,mem:'Namdev S'},
+  {id:'TSK000052',n:'2nd slab concrete pour',cat:'Civil',ps:new Date(2026,3,10),pe:new Date(2026,3,20),prog:25,s:'In Progress',delay:8,mem:'Namdev S'},
+  {id:'TSK000054',n:'2nd slab shuttering',cat:'Civil',ps:new Date(2026,3,8),pe:new Date(2026,3,18),prog:75,s:'In Progress',delay:12,mem:'Krunal T'},
+  {id:'TSK000076',n:'R2 retaining wall concrete (E-side)',cat:'Civil',ps:new Date(2026,3,6),pe:new Date(2026,3,14),prog:44.7,s:'In Progress',delay:1,mem:'Namdev S'},
+  {id:'TSK000077',n:'R2 retaining wall steel',cat:'Civil',ps:new Date(2026,3,1),pe:new Date(2026,3,12),prog:73.1,s:'In Progress',delay:6,mem:'Krunal T'},
+  {id:'TSK000078',n:'R2 retaining wall shuttering',cat:'Civil',ps:new Date(2026,3,3),pe:new Date(2026,3,13),prog:56,s:'In Progress',delay:4,mem:'Namdev S'},
+  {id:'TSK000082',n:'Basement floor slab (overall)',cat:'Civil',ps:new Date(2026,3,1),pe:new Date(2026,3,30),prog:54.25,s:'In Progress',delay:0,mem:'Namdev S'},
+  {id:'TSK000085',n:'Soling work',cat:'Civil',ps:new Date(2026,2,28),pe:new Date(2026,3,15),prog:70,s:'In Progress',delay:0,mem:'Krunal T'},
+  {id:'TSK-N-001',n:'2nd slab — column steel work',cat:'Civil',ps:new Date(2026,3,12),pe:new Date(2026,3,22),prog:0,s:'Not Started',delay:0,mem:'Namdev S'},
+  {id:'TSK-N-002',n:'Basement waterproofing — lift pit',cat:'Civil',ps:new Date(2026,3,15),pe:new Date(2026,3,25),prog:0,s:'Not Started',delay:0,mem:'Waterproofing sub'},
+  {id:'TSK-N-003',n:'3rd slab shuttering preparation',cat:'Civil',ps:new Date(2026,3,20),pe:new Date(2026,4,5),prog:0,s:'Not Started',delay:0,mem:'Krunal T'},
+  {id:'TSK-N-004',n:'Plinth beam — B1 to GF level',cat:'Civil',ps:new Date(2026,3,18),pe:new Date(2026,3,28),prog:0,s:'Not Started',delay:0,mem:'Krunal T'},
+  {id:'TSK-N-005',n:'Column concreting — GF level',cat:'Civil',ps:new Date(2026,3,22),pe:new Date(2026,4,2),prog:0,s:'Not Started',delay:0,mem:'Namdev S'},
+  {id:'TSK-N-006',n:'Staircase concrete — B1 to GF',cat:'Civil',ps:new Date(2026,3,25),pe:new Date(2026,4,5),prog:0,s:'Not Started',delay:0,mem:'Krunal T'},
+  {id:'TSK-N-007',n:'Lift pit concrete lining',cat:'Civil',ps:new Date(2026,3,28),pe:new Date(2026,4,8),prog:0,s:'Not Started',delay:0,mem:'Namdev S'},
+  /* ── DESIGN ── */
+  {id:'TSK001007',n:'Section drawing — all levels',cat:'Design',ps:new Date(2026,2,29),pe:new Date(2026,3,20),prog:50,s:'In Progress',delay:88,mem:'Minal F'},
+  {id:'TSK001591',n:'2nd slab design drawing',cat:'Design',ps:new Date(2026,2,29),pe:new Date(2026,3,15),prog:65,s:'In Progress',delay:0,mem:'Nishigandha P'},
+  {id:'TSK001004',n:'Retaining wall drawing',cat:'Design',ps:new Date(2026,2,29),pe:new Date(2026,3,25),prog:70,s:'In Progress',delay:88,mem:'Minal F'},
+  {id:'TSK001003',n:'Water tank drawing',cat:'Design',ps:new Date(2026,2,29),pe:new Date(2026,3,30),prog:26,s:'In Progress',delay:88,mem:'Nishigandha P'},
+  {id:'TSK-N-008',n:'3rd slab structural drawing',cat:'Design',ps:new Date(2026,3,12),pe:new Date(2026,3,25),prog:0,s:'Not Started',delay:0,mem:'Minal F'},
+  {id:'TSK-N-009',n:'Column schedule drawing — GF to 1F',cat:'Design',ps:new Date(2026,3,10),pe:new Date(2026,3,20),prog:0,s:'Not Started',delay:0,mem:'Nishigandha P'},
+  {id:'TSK001009',n:'Plumbing drawing (overdue)',cat:'Design',ps:new Date(2026,0,1),pe:new Date(2026,3,30),prog:0,s:'Not Started',delay:99,mem:'Nishigandha P'},
+  {id:'TSK001008',n:'Electrical drawing (overdue)',cat:'Design',ps:new Date(2026,0,1),pe:new Date(2026,3,20),prog:0,s:'Not Started',delay:99,mem:'Minal F'},
+  {id:'TSK-N-010',n:'Facade elevation drawing',cat:'Design',ps:new Date(2026,3,20),pe:new Date(2026,4,5),prog:0,s:'Not Started',delay:0,mem:'Minal F'},
+  /* ── GENERAL ── */
+  {id:'TSK000582',n:'Glass work (overall)',cat:'General',ps:new Date(2026,3,1),pe:new Date(2026,5,30),prog:7.69,s:'In Progress',delay:1,mem:'Glass facade sub'},
+  {id:'TSK-N-011',n:'Safety barricading — upper floors',cat:'General',ps:new Date(2026,3,12),pe:new Date(2026,3,20),prog:0,s:'Not Started',delay:0,mem:'HSE officer'},
+  {id:'TSK-N-012',n:'Hoist installation (construction lift)',cat:'General',ps:new Date(2026,3,18),pe:new Date(2026,3,30),prog:0,s:'Not Started',delay:0,mem:'Site manager'},
+  {id:'TSK-N-013',n:'Tower crane height extension',cat:'General',ps:new Date(2026,3,20),pe:new Date(2026,3,22),prog:0,s:'Not Started',delay:0,mem:'Crane operator'},
+  {id:'TSK-N-014',n:'Temporary power upgrade (DG set)',cat:'General',ps:new Date(2026,3,14),pe:new Date(2026,3,16),prog:0,s:'Not Started',delay:0,mem:'Electrical sub'},
+  {id:'TSK-N-025',n:'Site survey and TBM shifting',cat:'General',ps:new Date(2026,3,10),pe:new Date(2026,3,11),prog:0,s:'Not Started',delay:0,mem:'Site manager'},
+  /* ── WATERPROOFING ── */
+  {id:'TSK-N-015',n:'UG water tank waterproofing',cat:'Waterproofing',ps:new Date(2026,3,15),pe:new Date(2026,3,25),prog:0,s:'Not Started',delay:0,mem:'Waterproofing sub'},
+  {id:'TSK-N-016',n:'Lift pit waterproofing',cat:'Waterproofing',ps:new Date(2026,3,20),pe:new Date(2026,3,28),prog:0,s:'Not Started',delay:0,mem:'Waterproofing sub'},
+  {id:'TSK-N-017',n:'Basement floor waterproofing — coat 1',cat:'Waterproofing',ps:new Date(2026,3,25),pe:new Date(2026,4,5),prog:0,s:'Not Started',delay:0,mem:'Waterproofing sub'},
+  /* ── MASONRY ── */
+  {id:'TSK-N-018',n:'AAC block work — basement walls',cat:'Masonry',ps:new Date(2026,3,25),pe:new Date(2026,4,15),prog:0,s:'Not Started',delay:0,mem:'Mason sub'},
+  {id:'TSK-N-019',n:'Internal partition — B1 level',cat:'Masonry',ps:new Date(2026,3,28),pe:new Date(2026,4,20),prog:0,s:'Not Started',delay:0,mem:'Mason sub'},
+  /* ── ELECTRICAL ── */
+  {id:'TSK-N-020',n:'Electrical drawing (awaited — overdue)',cat:'Electrical',ps:new Date(2026,0,1),pe:new Date(2026,3,25),prog:0,s:'Not Started',delay:99,mem:'Minal F'},
+  {id:'TSK-N-021',n:'Earthing layout — basement',cat:'Electrical',ps:new Date(2026,3,28),pe:new Date(2026,4,8),prog:0,s:'Not Started',delay:0,mem:'MEP sub'},
+  /* ── PLUMBING ── */
+  {id:'TSK-N-022',n:'Plumbing drawing (awaited — overdue)',cat:'Plumbing',ps:new Date(2026,0,1),pe:new Date(2026,4,9),prog:0,s:'Not Started',delay:99,mem:'Nishigandha P'},
+  {id:'TSK-N-023',n:'Underground drainage layout drawing',cat:'Plumbing',ps:new Date(2026,3,20),pe:new Date(2026,4,5),prog:0,s:'Not Started',delay:0,mem:'Plumbing sub'},
+  {id:'TSK-N-024',n:'UGD pipeline — basement level',cat:'Plumbing',ps:new Date(2026,3,28),pe:new Date(2026,4,12),prog:0,s:'Not Started',delay:0,mem:'Plumbing sub'}
+];
+
+
+
+/* ═══════════════════════════════════════════════
+   UPCOMING ACTIVITIES — RENDER
+════════════════════════════════════════════════ */
+let currentWindow = 7;
+
+function fmtD(d){
+  const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return d.getDate()+' '+mo[d.getMonth()];
+}
+function durD(ps,pe){return Math.round((pe-ps)/(1000*60*60*24))+'d'}
+function scC2(s){return s==='Completed'?C.green:s==='In Progress'?C.amber:'#9ca3af'}
+function statCls(s){return s==='Completed'?'bgg':s==='In Progress'?'bga':'bgs'}
+
+function filterUpcoming(days){
+  const end = new Date(TODAY); end.setDate(end.getDate()+days);
+  return UPCOMING.filter(t => t.ps <= end && t.pe >= TODAY);
+}
+
+function renderUpcomingActivities(days){
+  currentWindow = days;
+  const tasks = filterUpcoming(days);
+
+  // Summary chips
+  const ip = tasks.filter(t=>t.s==='In Progress').length;
+  const ns = tasks.filter(t=>t.s==='Not Started').length;
+  const dl = tasks.filter(t=>t.delay>0).length;
+  const ending = tasks.filter(t=>{
+    const wEnd=new Date(TODAY); wEnd.setDate(wEnd.getDate()+days);
+    return t.pe>=TODAY && t.pe<=wEnd;
+  }).length;
+  document.getElementById('win-summary').innerHTML=
+    `<span class="win-chip chip-ip">${ip} in progress</span>`+
+    `<span class="win-chip chip-ns">${ns} starting</span>`+
+    `<span class="win-chip chip-dl">${dl} delayed</span>`+
+    `<span class="win-chip chip-ok">${ending} completing</span>`;
+
+  // Group by category in a fixed display order
+  const CAT_ORDER=['Civil','Design','General','Waterproofing','Masonry','Electrical','Plumbing','Tiling','Plaster','Cleaning'];
+  const grouped={};
+  tasks.forEach(t=>{ if(!grouped[t.cat]) grouped[t.cat]=[]; grouped[t.cat].push(t); });
+
+  const cats = [...CAT_ORDER.filter(c=>grouped[c]), ...Object.keys(grouped).filter(c=>!CAT_ORDER.includes(c))];
+
+  if(cats.length===0){
+    document.getElementById('upcoming-activities').innerHTML=`<div class="no-tasks">No scheduled activities found for this window.</div>`;
+    return;
+  }
+
+  const CAT_COLORS={Civil:'#1d4ed8',Design:'#6d28d9',General:'#0f6d50',Waterproofing:'#0d7a6e',Masonry:'#a16207',Electrical:'#b91c1c',Plumbing:'#96690b',Tiling:'#374151',Plaster:'#6b7280',Cleaning:'#9ca3af'};
+  const CAT_BDG={Civil:'bgb',Design:'bgp',General:'bgg',Waterproofing:'bgt',Masonry:'bga',Electrical:'bgr',Plumbing:'bgd',Tiling:'bgs',Plaster:'bgs',Cleaning:'bgs'};
+
+  document.getElementById('upcoming-activities').innerHTML = cats.map(cat=>{
+    const tl = grouped[cat];
+    const ipC = tl.filter(t=>t.s==='In Progress').length;
+    const dlC = tl.filter(t=>t.delay>0).length;
+    const nsC = tl.filter(t=>t.s==='Not Started').length;
+    const catCol = CAT_COLORS[cat]||'#6b7280';
+    // Sort: In Progress first, then by start date
+    tl.sort((a,b)=>{
+      const order={Completed:2,'In Progress':0,'Not Started':1};
+      return (order[a.s]||1)-(order[b.s]||1)||(a.ps-b.ps);
+    });
+
+    const rows = tl.map(t=>{
+      const sc = scC2(t.s);
+      const ppct = pc(t.prog);
+      const completing = t.pe >= TODAY && t.pe <= new Date(TODAY.getTime()+days*86400000);
+      const today_flag = t.ps <= TODAY && t.pe >= TODAY && t.s==='In Progress';
+      return `<div class="act-row">
+        <div><div class="act-swatch" style="background:${sc}"></div></div>
+        <div class="act-name" title="${t.n}">
+          ${today_flag?'<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:'+C.amber+';margin-right:5px;vertical-align:middle"></span>':''}
+          ${t.n}
+        </div>
+        <div class="act-dates">${fmtD(t.ps)} → ${fmtD(t.pe)}</div>
+        <div class="act-dur">${durD(t.ps,t.pe)}</div>
+        <div class="act-bar-wrap">
+          <div class="act-bar-track"><div class="act-bar-fill" style="width:${t.prog}%;background:${t.prog>0?ppct:'#e5e7eb'}"></div></div>
+          <span class="act-pct" style="color:${t.prog>0?ppct:'var(--t4)'}">${t.prog}%</span>
+        </div>
+        <div class="act-delay">${t.delay>0?`<span style="color:${t.delay>30?C.red:C.amber};font-weight:700">+${t.delay}d</span>`:`<span style="color:var(--t4)">—</span>`}</div>
+        <div class="act-mem">${t.mem}</div>
+        <div class="act-stat">
+          ${completing&&t.s!=='Completed'?'<span class="bdg bgg" style="font-size:9px">Completing</span>':''}
+          ${!completing?`<span class="bdg ${statCls(t.s)}" style="font-size:9px">${t.s==='Not Started'?'Starting':t.s}</span>`:''}
+        </div>
+      </div>`;
+    }).join('');
+
+    const isOpenByDefault = ipC > 0;
+    const uid = 'cat-'+cat.replace(/[^a-z]/gi,'').toLowerCase();
+    return `<div class="cat-group">
+      <div class="cat-header" onclick="toggleCat('${uid}')">
+        <span class="cat-arrow ${isOpenByDefault?'open':''}">▶</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:10px;height:10px;border-radius:2px;background:${catCol};flex-shrink:0"></div>
+          <span class="cat-name">${cat}</span>
+          <span style="font-size:11px;color:var(--t4)">${tl.length} task${tl.length!==1?'s':''}</span>
+        </div>
+        <div class="cat-pills">
+          ${ipC>0?`<span class="bdg bga">${ipC} active</span>`:''}
+          ${nsC>0?`<span class="bdg bgb">${nsC} starting</span>`:''}
+          ${dlC>0?`<span class="bdg bgr">${dlC} delayed</span>`:''}
+          ${ipC===0&&nsC===0?`<span class="bdg bgs">on plan</span>`:''}
+        </div>
+      </div>
+      <div class="cat-body ${isOpenByDefault?'open':''}" id="${uid}">
+        <div class="act-hdr">
+          <div></div><div>Task</div><div>Dates</div><div>Dur</div><div>Progress</div><div>Delay</div><div>Assigned</div><div>Status</div>
+        </div>
+        ${rows}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleCat(uid){
+  const body=document.getElementById(uid);
+  const hdr=body.previousElementSibling;
+  const arrow=hdr.querySelector('.cat-arrow');
+  const open=body.classList.toggle('open');
+  arrow.classList.toggle('open',open);
+}
+
+function renderSchedule(){
+  const ms=[
+    {n:'Piling & foundations complete',dt:'Sep 2025',s:'done'},{n:'Raft / UG water tank complete',dt:'Sep 2025',s:'done'},
+    {n:'Excavation complete',dt:'Sep 2025 (+132d late)',s:'late'},{n:'RCC basement to 5th slab',dt:'May 2026 (est)',s:'ip'},
+    {n:'Basement floor complete',dt:'May 2026 (est)',s:'ip'},{n:'Drawing package complete',dt:'+228d behind plan',s:'crit'},
+    {n:'BBM / Masonry start',dt:'Not started — no date',s:'pend'},{n:'MEP rough-in ★',dt:'Jun 2026',s:'pend'},
+    {n:'Handover (originally planned)',dt:'90+ days delayed',s:'crit'}
+  ];
+  const col={done:C.green,late:C.amber,ip:C.blue,crit:C.red,pend:'#d1d5db'};
+  document.getElementById('milestone-list').innerHTML=ms.map(m=>`<div class="wn"><div style="width:8px;height:8px;border-radius:50%;background:${col[m.s]};flex-shrink:0;margin-top:4px"></div><div style="flex:1"><div class="wn-name">${m.n}</div><div class="wn-cat">${m.dt}</div></div></div>`).join('');
+
+  dc('delayChart');
+  const del=CATS.filter(c=>c.ad>0);
+  rc('delayChart',new Chart(document.getElementById('delayChart'),{type:'bar',data:{labels:del.map(c=>c.c),datasets:[{label:'Avg delay',data:del.map(c=>c.ad),backgroundColor:del.map(c=>c.ad>100?'rgba(185,28,28,.65)':c.ad>50?'rgba(161,98,7,.6)':'rgba(29,78,216,.55)'),borderRadius:4}]},options:gO({indexAxis:'y',sx:{grid:{display:false}}})}));
+
+  document.getElementById('delay-body').innerHTML=TOPDELAY.map(t=>`<tr>
+    <td>${t.n}</td><td><span class="bdg ${t.c==='Civil'?'bgb':t.c==='Design'?'bgp':t.c==='Electrical'?'bgd':'bgs'}">${t.c}</span></td>
+    <td style="font-weight:700;color:${t.d>150?C.red:t.d>80?C.amber:C.green}">+${t.d}d</td>
+    <td><span class="bdg ${t.s==='Completed'?'bgg':t.s==='In Progress'?'bga':'bgr'}">${t.s}</span></td>
+    <td><div style="display:flex;align-items:center;gap:5px"><div style="width:44px;height:4px;background:var(--b1);border-radius:99px;overflow:hidden"><div style="height:100%;width:${t.p}%;background:${pc(t.p)};border-radius:99px"></div></div><span>${t.p}%</span></div></td>
+  </tr>`).join('');
+
+  const slabs=[{n:'B1 slab',p:100,s:'Completed',d:14},{n:'Raft',p:100,s:'Completed',d:18},{n:'1st slab concrete',p:80,s:'In Progress',d:11},{n:'1st slab shuttering',p:59.9,s:'In Progress',d:9},{n:'2nd slab shuttering',p:75,s:'In Progress',d:12},{n:'2nd slab concrete',p:25,s:'In Progress',d:8},{n:'3rd slab',p:0,s:'Not Started',d:0},{n:'4th slab',p:0,s:'Not Started',d:0},{n:'5th slab',p:0,s:'Not Started',d:0}];
+  document.getElementById('slab-list').innerHTML=slabs.map(s=>`<div class="pr s"><div class="pl">${s.n}</div><div class="pt"><div class="pf" style="width:${s.p}%;background:${scC(s.s)}"></div></div><div class="pv" style="color:${scC(s.s)}">${s.p}%</div><div class="pd">${db(s.d)}</div></div>`).join('');
+
+  dc('rfiChart');
+  rc('rfiChart',new Chart(document.getElementById('rfiChart'),{type:'bar',data:{labels:['0–2d','3–5d','5–10d','>10d'],datasets:[{label:'RFIs',data:[8,7,5,3],backgroundColor:['rgba(15,109,80,.65)','rgba(161,98,7,.65)','rgba(185,28,28,.55)','rgba(185,28,28,.85)'],borderRadius:4}]},options:gO()}));
+
+  // Upcoming activities - init with 7 days
+  renderUpcomingActivities(7);
+
+  // Wire window toggle buttons
+  document.getElementById('win-btns').addEventListener('click',function(e){
+    const btn=e.target.closest('.win-btn'); if(!btn) return;
+    document.querySelectorAll('.win-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderUpcomingActivities(parseInt(btn.dataset.days));
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   OPS RENDER
+════════════════════════════════════════════════ */
+function renderOps(){
+  dc('trendChart');
+  rc('trendChart',new Chart(document.getElementById('trendChart'),{type:'line',data:{labels:['Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr'],datasets:[{label:'Actual',data:[28,34,39,44,48,51,52,53],borderColor:C.green,borderWidth:2.5,pointRadius:4,pointBackgroundColor:C.green,fill:true,backgroundColor:C.greenF,tension:.3},{label:'Planned',data:[30,45,65,90,120,160,200,240],borderColor:'#d1d5db',borderWidth:2,borderDash:[5,3],pointRadius:0,fill:false,tension:.3}]},options:gO()}));
+  dc('readinessChart');
+  const r=[...CATS].sort((a,b)=>b.d/b.t-a.d/a.t);
+  rc('readinessChart',new Chart(document.getElementById('readinessChart'),{type:'bar',data:{labels:r.map(x=>x.c),datasets:[{label:'% done',data:r.map(x=>Math.round(x.d/x.t*100)),backgroundColor:r.map(x=>{const p=x.d/x.t*100;return p>60?'rgba(15,109,80,.7)':p>20?'rgba(161,98,7,.65)':'rgba(185,28,28,.5)'}),borderRadius:4}]},options:gO({indexAxis:'y',sx:{min:0,max:100,ticks:{callback:v=>v+'%',color:C.tick,font:{size:11,family:C.f}}},sy:{grid:{display:false}}})}));
+  dc('wfChart');
+  rc('wfChart',new Chart(document.getElementById('wfChart'),{type:'bar',data:{labels:['W1 Mar','W2 Mar','W3 Mar','W4 Mar','W1 Apr','W2 Apr'],datasets:[{label:'Planned',data:[230,230,240,240,240,235],backgroundColor:'rgba(0,0,0,.1)',borderRadius:3},{label:'Actual',data:[218,225,232,228,216,218],backgroundColor:'rgba(29,78,216,.65)',borderRadius:3}]},options:gO()}));
+  dc('safetyChart');
+  rc('safetyChart',new Chart(document.getElementById('safetyChart'),{type:'bar',data:{labels:['Nov','Dec','Jan','Feb','Mar','Apr'],datasets:[{label:'LTIFR',data:[0.9,0.8,1.1,0.7,0.8,0.8],backgroundColor:'rgba(185,28,28,.6)',borderRadius:3,yAxisID:'y'},{label:'Near misses',data:[3,4,2,5,3,2],backgroundColor:'rgba(161,98,7,.5)',borderRadius:3,yAxisID:'y1'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:tt},scales:{y:{min:0,max:2,grid:{color:C.grid},ticks:{color:C.tick,font:{size:11,family:C.f}}},y1:{position:'right',min:0,max:8,grid:{display:false},ticks:{color:C.tick,font:{size:11,family:C.f}}},x:{grid:{color:C.grid},ticks:{color:C.tick,font:{size:11,family:C.f}}}}}}));
+}
+
+/* ═══════════════════════════════════════════════
+   FINANCE RENDER
+════════════════════════════════════════════════ */
+function renderFinance(){
+  // BOQ vs certified vs paid
+  dc('boqChart');
+  rc('boqChart',new Chart(document.getElementById('boqChart'),{
+    type:'bar',
+    data:{labels:BOQ_CATS,datasets:[
+      {label:'BOQ Budget',data:BOQ_BUDGET,backgroundColor:'rgba(0,0,0,.1)',borderRadius:3},
+      {label:'Work Certified',data:BOQ_CERT,backgroundColor:'rgba(30,58,95,.7)',borderRadius:3},
+      {label:'Paid to Contractor',data:BOQ_PAID,backgroundColor:'rgba(15,109,80,.65)',borderRadius:3}
+    ]},
+    options:gO({sx:{ticks:{maxRotation:30,font:{size:10,family:C.f},color:C.tick}},sy:{ticks:{callback:v=>'₹'+v+'L'}}})
+  }));
+
+  // Cost pie
+  const ci=[{l:'Civil/RCC',v:42,c:'#1e3a5f'},{l:'Foundations',v:18,c:'#0d7a6e'},{l:'MEP Elec',v:0,c:'#d1d5db'},{l:'Plumbing',v:0,c:'#e5e7eb'},{l:'Tiling',v:0,c:'#f4f3f0'},{l:'Design',v:8,c:'#6d28d9'},{l:'Facade',v:2,c:'#96690b'},{l:'Other',v:6,c:'#9ca3af'}].filter(x=>x.v>0);
+  dc('costPieChart');
+  rc('costPieChart',new Chart(document.getElementById('costPieChart'),{type:'doughnut',data:{labels:ci.map(x=>x.l),datasets:[{data:ci.map(x=>x.v),backgroundColor:ci.map(x=>x.c),borderWidth:2,borderColor:'#fff',hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false},tooltip:tt}}}));
+  document.getElementById('cost-pie-leg').innerHTML=ci.map(x=>`<span><span class="ld" style="background:${x.c}"></span>${x.l}</span>`).join('');
+
+  // Contractor table
+  document.getElementById('contractor-table').innerHTML=`<thead><tr><th>Contractor / Package</th><th>Category</th><th>BOQ (₹L)</th><th>Certified (₹L)</th><th>Paid (₹L)</th><th>Outstanding (₹L)</th><th>Retention (₹L)</th><th>Status</th></tr></thead><tbody>${
+    CONTRACTORS.map(c=>{
+      const out=c.cert-c.paid;
+      const pct=c.boq>0?Math.round(c.cert/c.boq*100):0;
+      const sc=pct>80?'bgg':pct>40?'bga':c.cert===0?'bgr':'bga';
+      return`<tr><td>${c.name}</td><td><span class="bdg bgs">${c.cat}</span></td><td>${fL(c.boq)}</td><td>${fL(c.cert)}</td><td>${fL(c.paid)}</td><td style="color:${out>100?C.red:C.amber};font-weight:700">${fL(out)}</td><td>${fL(c.ret)}</td><td><span class="bdg ${sc}">${pct>80?'Active':pct>0?'Partial':'Not started'}</span></td></tr>`;
+    }).join('')
+  }</tbody>`;
+
+  // Cash flow
+  dc('cashflowChart');
+  rc('cashflowChart',new Chart(document.getElementById('cashflowChart'),{
+    type:'line',
+    data:{labels:['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr'],
+      datasets:[
+        {label:'Planned spend',data:[400,600,800,900,1000,1100,1200,1300,1400,1450,1480,1500,1480],borderColor:'#d1d5db',borderWidth:2,borderDash:[5,3],pointRadius:0,fill:false,tension:.3},
+        {label:'Actual spend',data:[350,480,620,740,860,960,1040,1100,1150,1080,1100,1120,1120],borderColor:C.navy,borderWidth:2.5,pointRadius:4,pointBackgroundColor:C.navy,fill:true,backgroundColor:C.navyF,tension:.3}
+      ]
+    },
+    options:gO({sy:{ticks:{callback:v=>'₹'+v+'L',color:C.tick,font:{size:11,family:C.f}}}})
+  }));
+
+  // Change orders
+  dc('coChart');
+  rc('coChart',new Chart(document.getElementById('coChart'),{
+    type:'bar',
+    data:{labels:CO_CATS,datasets:[{label:'CO Value (₹L)',data:CO_VALS,backgroundColor:['rgba(185,28,28,.65)','rgba(161,98,7,.6)','rgba(30,58,95,.6)','rgba(109,40,217,.55)','rgba(15,109,80,.6)'],borderRadius:4}]},
+    options:gO({sy:{ticks:{callback:v=>'₹'+v+'L'}}})
+  }));
+
+  // Material table
+  document.getElementById('material-table').innerHTML=`<thead><tr><th>Material</th><th>Unit</th><th>BOQ Qty</th><th>PO Raised</th><th>GRN Received</th><th>Pending</th><th>Rate (₹)</th><th>PO Value (₹L)</th><th>Paid (₹L)</th></tr></thead><tbody>${
+    MATERIALS.map(m=>{
+      const pc2=m.boq>0?Math.round(m.grn/m.boq*100):0;
+      return`<tr><td>${m.m}</td><td><span class="bdg bgs">${m.u}</span></td><td>${fL(m.boq)}</td><td>${m.po>0?fL(m.po):'<span class="bdg bgr">Not raised</span>'}</td><td>${m.grn>0?fL(m.grn):'—'}</td><td style="color:${m.pend>m.boq*.5?C.red:C.amber}">${fL(m.pend)}</td><td>₹${fL(m.rate)}</td><td>${m.poval>0?fL(m.poval):'—'}</td><td>${m.paid>0?fL(m.paid):'—'}</td></tr>`;
+    }).join('')
+  }</tbody>`;
+}
+
+/* ═══════════════════════════════════════════════
+   UPLOAD TEMPLATE RENDER
+════════════════════════════════════════════════ */
+const UPLOAD_SCHEMAS={
+  task:{
+    title:'Task Progress Upload',
+    desc:'Weekly export from your construction management tool. Maps directly to the Construction Progress and Schedule tabs.',
+    source:'Construction tool (weekly export) → Upload every Monday',
+    freq:'Weekly',
+    fields:[
+      {n:'project_id',t:'Text',d:'Unique project code e.g. GA-E-BLDG',req:true,ex:'GA-E-BLDG'},
+      {n:'task_id',t:'Text',d:'Tool task ID e.g. TSK000001',req:true,ex:'TSK000001'},
+      {n:'task_name',t:'Text',d:'Full task name from WBS',req:true,ex:'1st slab concrete'},
+      {n:'level',t:'Text',d:'WBS hierarchy level: L1, L2, L3, L4, L5',req:true,ex:'L2'},
+      {n:'parent_leaf',t:'Text',d:'Parent or Leaf node',req:true,ex:'Leaf'},
+      {n:'work_category',t:'Text',d:'Category: Civil, Design, MEP, Electrical, Plumbing, Tiling, Plaster, Masonry, General',req:true,ex:'Civil'},
+      {n:'assigned_members',t:'Text',d:'Comma-separated names',req:false,ex:'Namdev S, Krunal T'},
+      {n:'planned_start',t:'Date DD-MMM-YY',d:'Planned start date',req:true,ex:'30-Apr-25'},
+      {n:'planned_end',t:'Date DD-MMM-YY',d:'Planned end date',req:true,ex:'03-May-26'},
+      {n:'actual_start',t:'Date DD-MMM-YY',d:'Actual start date',req:false,ex:'22-Apr-25'},
+      {n:'actual_end',t:'Date DD-MMM-YY',d:'Actual completion date',req:false,ex:'07-Sep-25'},
+      {n:'duration_days',t:'Number',d:'Planned duration in days',req:false,ex:'369'},
+      {n:'uom',t:'Text',d:'Unit of measurement: cum, kg, sqft, rmt, nos, %',req:false,ex:'cum'},
+      {n:'total_qty',t:'Number',d:'Total quantity as per plan',req:false,ex:'10000'},
+      {n:'progress_qty',t:'Number',d:'Quantity completed to date',req:false,ex:'7400'},
+      {n:'progress_pct',t:'Number (0–100)',d:'Percentage completion',req:true,ex:'74'},
+      {n:'status',t:'Text',d:'Completed / In Progress / Not Started',req:true,ex:'In Progress'},
+      {n:'delay_days',t:'Number',d:'Days behind plan (positive = delayed)',req:false,ex:'13'},
+      {n:'boq_rate',t:'Number',d:'Rate per unit from BOQ (₹)',req:false,ex:'7800'},
+      {n:'boq_amount',t:'Number',d:'Total BOQ value for this task (₹)',req:false,ex:'3000000'},
+      {n:'extract_date',t:'Date',d:'Date this export was pulled',req:true,ex:'09-Apr-26'}
+    ]
+  },
+  boq:{
+    title:'BOQ & Budget Upload',
+    desc:'Bill of Quantities mapped to WBS task IDs. This is the most critical missing data — activates CPI, EAC, EVM, and cost variance across all financial KPIs.',
+    source:'Quantity Surveyor BOQ document → upload once, then update for revisions',
+    freq:'Once + on revision',
+    fields:[
+      {n:'project_id',t:'Text',d:'Project code',req:true,ex:'GA-E-BLDG'},
+      {n:'boq_line_ref',t:'Text',d:'Your internal BOQ line reference number',req:true,ex:'BOQ-001-A'},
+      {n:'task_id',t:'Text',d:'Linked construction tool TaskID',req:true,ex:'TSK000005'},
+      {n:'work_package',t:'Text',d:'High-level package: Structure, MEP, Finishes etc.',req:true,ex:'Structure'},
+      {n:'description',t:'Text',d:'Item description from BOQ',req:true,ex:'RCC M30 column concrete'},
+      {n:'uom',t:'Text',d:'cum / MT / sqft / rmt / nos / LS',req:true,ex:'cum'},
+      {n:'boq_qty',t:'Number',d:'Tendered quantity',req:true,ex:'450'},
+      {n:'rate_inr',t:'Number',d:'Agreed rate per unit (₹)',req:true,ex:'8200'},
+      {n:'boq_value_inr',t:'Number',d:'Total BOQ value (qty × rate)',req:true,ex:'3690000'},
+      {n:'contractor_id',t:'Text',d:'Linked contractor code',req:false,ex:'CON-001'},
+      {n:'revision_no',t:'Number',d:'BOQ revision number (0 = original)',req:false,ex:'0'},
+      {n:'approved_date',t:'Date',d:'Date BOQ was approved / signed',req:false,ex:'15-Mar-25'}
+    ]
+  },
+  contractor:{
+    title:'Contractor Payment Upload',
+    desc:'Monthly billing and payment status per contractor and work package. Powers the contractor payment ledger and cash flow charts.',
+    source:'Accounts payable / Tally ERP → monthly extract',
+    freq:'Monthly (by 5th of each month)',
+    fields:[
+      {n:'project_id',t:'Text',d:'Project code',req:true,ex:'GA-E-BLDG'},
+      {n:'contractor_id',t:'Text',d:'Unique contractor code',req:true,ex:'CON-001'},
+      {n:'contractor_name',t:'Text',d:'Registered firm name',req:true,ex:'Namdev Shingulwar & Co.'},
+      {n:'work_package',t:'Text',d:'Package: Civil, MEP, Electrical, etc.',req:true,ex:'Civil / RCC'},
+      {n:'bill_no',t:'Text',d:'RA bill or invoice number',req:true,ex:'RA-007'},
+      {n:'bill_date',t:'Date',d:'Date of bill submission',req:true,ex:'31-Mar-26'},
+      {n:'boq_value_inr',t:'Number',d:'Total contracted BOQ value (₹)',req:true,ex:'42000000'},
+      {n:'work_done_value_inr',t:'Number',d:'Cumulative work done value (₹)',req:true,ex:'39600000'},
+      {n:'bill_amount_inr',t:'Number',d:'Amount in this RA bill (₹)',req:true,ex:'2400000'},
+      {n:'certified_amount_inr',t:'Number',d:'Amount certified by engineer (₹)',req:true,ex:'2200000'},
+      {n:'paid_amount_inr',t:'Number',d:'Amount released as payment (₹)',req:true,ex:'2000000'},
+      {n:'payment_date',t:'Date',d:'Date payment was released',req:false,ex:'08-Apr-26'},
+      {n:'retention_pct',t:'Number',d:'Retention % (typically 5–10%)',req:false,ex:'5'},
+      {n:'retention_held_inr',t:'Number',d:'Retention amount withheld (₹)',req:false,ex:'1980000'},
+      {n:'deductions_inr',t:'Number',d:'Any deductions (penalty, material recovery)',req:false,ex:'0'}
+    ]
+  },
+  workforce:{
+    title:'Daily Workforce Upload',
+    desc:'Daily headcount by trade and contractor. Powers workforce vs plan KPI and productivity analysis. Can be submitted as a single weekly batch.',
+    source:'Site manager daily attendance register → upload daily or weekly batch',
+    freq:'Daily (or weekly batch every Monday)',
+    fields:[
+      {n:'project_id',t:'Text',d:'Project code',req:true,ex:'GA-E-BLDG'},
+      {n:'date',t:'Date DD-MMM-YY',d:'Date of attendance',req:true,ex:'09-Apr-26'},
+      {n:'trade',t:'Text',d:'Trade: Mason, Carpenter, Steel fixer, Helper, Supervisor, MEP fitter',req:true,ex:'Mason'},
+      {n:'contractor_id',t:'Text',d:'Contractor supplying this trade',req:false,ex:'CON-001'},
+      {n:'planned_count',t:'Number',d:'Planned headcount for this trade today',req:true,ex:'25'},
+      {n:'actual_count',t:'Number',d:'Actual headcount present on site',req:true,ex:'22'},
+      {n:'man_hours_worked',t:'Number',d:'Total man-hours worked (count × hours)',req:false,ex:'176'},
+      {n:'remarks',t:'Text',d:'Any absenteeism reason or note',req:false,ex:'3 absent — local holiday'}
+    ]
+  },
+  material:{
+    title:'Material & PO Status Upload',
+    desc:'Procurement and delivery tracking per material category. Powers material on-time delivery KPI and procurement cash flow.',
+    source:'Procurement / store team → weekly update',
+    freq:'Weekly',
+    fields:[
+      {n:'project_id',t:'Text',d:'Project code',req:true,ex:'GA-E-BLDG'},
+      {n:'material_code',t:'Text',d:'Internal material code',req:true,ex:'MAT-001'},
+      {n:'material_name',t:'Text',d:'Full description',req:true,ex:'TMT Steel Fe500 16mm'},
+      {n:'uom',t:'Text',d:'Unit: MT, cum, sqft, rmt, nos',req:true,ex:'MT'},
+      {n:'boq_qty',t:'Number',d:'Total required as per BOQ',req:true,ex:'180'},
+      {n:'po_no',t:'Text',d:'Purchase order number',req:false,ex:'PO-2025-044'},
+      {n:'po_date',t:'Date',d:'Date PO was issued',req:false,ex:'10-Feb-26'},
+      {n:'po_qty',t:'Number',d:'Quantity ordered in PO',req:false,ex:'180'},
+      {n:'rate_inr',t:'Number',d:'Rate per unit (₹) in PO',req:false,ex:'62000'},
+      {n:'po_value_inr',t:'Number',d:'Total PO value (₹)',req:false,ex:'11160000'},
+      {n:'planned_delivery_date',t:'Date',d:'Committed delivery date',req:false,ex:'01-Mar-26'},
+      {n:'grn_qty',t:'Number',d:'Quantity received (GRN)',req:false,ex:'122'},
+      {n:'grn_date',t:'Date',d:'Date of last GRN',req:false,ex:'28-Mar-26'},
+      {n:'paid_value_inr',t:'Number',d:'Amount paid to supplier (₹)',req:false,ex:'7564000'},
+      {n:'pending_qty',t:'Number',d:'Quantity still pending delivery',req:false,ex:'58'}
+    ]
+  },
+  safety:{
+    title:'Daily Safety Register Upload',
+    desc:'HSE daily log. Powers LTIFR, near-miss tracking, toolbox talk compliance. Required to calculate man-hours and incident rate.',
+    source:'HSE officer → daily entry, weekly batch upload',
+    freq:'Daily / Weekly batch',
+    fields:[
+      {n:'project_id',t:'Text',d:'Project code',req:true,ex:'GA-E-BLDG'},
+      {n:'date',t:'Date DD-MMM-YY',d:'Date of record',req:true,ex:'09-Apr-26'},
+      {n:'total_manpower',t:'Number',d:'Total workers on site that day',req:true,ex:'218'},
+      {n:'man_hours_worked',t:'Number',d:'Total man-hours (manpower × working hours)',req:true,ex:'1744'},
+      {n:'lti_count',t:'Number',d:'Lost Time Injuries on this date',req:true,ex:'0'},
+      {n:'first_aid_count',t:'Number',d:'First aid cases on this date',req:false,ex:'1'},
+      {n:'near_miss_count',t:'Number',d:'Near misses reported',req:false,ex:'0'},
+      {n:'toolbox_talk_held',t:'Yes/No',d:'Was toolbox talk conducted today?',req:false,ex:'Yes'},
+      {n:'toolbox_attendance',t:'Number',d:'Number attending toolbox talk',req:false,ex:'195'},
+      {n:'incident_description',t:'Text',d:'Description if any incident occurred',req:false,ex:''},
+      {n:'corrective_action',t:'Text',d:'Action taken for any incident',req:false,ex:''}
+    ]
+  },
+  rfi:{
+    title:'RFI & Change Order Register Upload',
+    desc:'RFIs and change orders affect schedule and cost. This register tracks resolution time and CO cost impact — powers change order rate and RFI aging KPIs.',
+    source:'PM / PMO → update on each RFI submission or CO approval',
+    freq:'As-and-when (minimum weekly)',
+    fields:[
+      {n:'project_id',t:'Text',d:'Project code',req:true,ex:'GA-E-BLDG'},
+      {n:'ref_type',t:'Text',d:'RFI or CO',req:true,ex:'RFI'},
+      {n:'ref_no',t:'Text',d:'Sequential reference number',req:true,ex:'RFI-2026-018'},
+      {n:'date_raised',t:'Date DD-MMM-YY',d:'Date submitted',req:true,ex:'01-Apr-26'},
+      {n:'raised_by',t:'Text',d:'Person or team who raised it',req:false,ex:'Site manager'},
+      {n:'description',t:'Text',d:'Short description of the query or change',req:true,ex:'Clarification on column detailing B2–B5'},
+      {n:'linked_task_id',t:'Text',d:'Affected WBS task ID',req:false,ex:'TSK000052'},
+      {n:'category',t:'Text',d:'Design / Soil / Client change / Regulatory / Supply chain',req:false,ex:'Design'},
+      {n:'date_responded',t:'Date DD-MMM-YY',d:'Date response / decision received',req:false,ex:'05-Apr-26'},
+      {n:'resolution_days',t:'Number',d:'Days from raised to responded',req:false,ex:'4'},
+      {n:'status',t:'Text',d:'Open / Responded / Closed',req:true,ex:'Closed'},
+      {n:'cost_impact_inr',t:'Number',d:'Cost impact (₹) — 0 if no cost change (CO only)',req:false,ex:'280000'},
+      {n:'schedule_impact_days',t:'Number',d:'Schedule impact in days (positive = delay)',req:false,ex:'3'},
+      {n:'approval_status',t:'Text',d:'Pending / Approved / Rejected (CO only)',req:false,ex:'Approved'}
+    ]
+  },
+  sales:{
+    title:'Sales & Collections Upload',
+    desc:'CRM bookings and Accounts Receivable data. Powers revenue realization, receivables, and CLP collection KPIs in the Financial tab.',
+    source:'CRM export + Tally AR module → monthly',
+    freq:'Monthly (by 5th)',
+    fields:[
+      {n:'project_id',t:'Text',d:'Project code',req:true,ex:'GA-E-BLDG'},
+      {n:'unit_no',t:'Text',d:'Flat/Villa/Unit number',req:true,ex:'E-1204'},
+      {n:'unit_type',t:'Text',d:'1BHK / 2BHK / 3BHK / Villa etc.',req:false,ex:'3BHK'},
+      {n:'carpet_area_sqft',t:'Number',d:'Carpet area in sqft',req:false,ex:'1240'},
+      {n:'booking_date',t:'Date DD-MMM-YY',d:'Date of booking',req:false,ex:'12-Jun-25'},
+      {n:'agreement_value_inr',t:'Number',d:'Total agreement value (₹)',req:true,ex:'12500000'},
+      {n:'buyer_name',t:'Text',d:'Buyer registered name',req:false,ex:'Rahul Patil'},
+      {n:'clp_milestone',t:'Text',d:'Current CLP milestone triggered',req:true,ex:'Slab 2 completion'},
+      {n:'demand_raised_inr',t:'Number',d:'Total demand raised to this buyer (₹)',req:true,ex:'6250000'},
+      {n:'demand_date',t:'Date DD-MMM-YY',d:'Date of last demand letter',req:false,ex:'01-Apr-26'},
+      {n:'collected_inr',t:'Number',d:'Total amount collected to date (₹)',req:true,ex:'5000000'},
+      {n:'last_collection_date',t:'Date DD-MMM-YY',d:'Date of last payment received',req:false,ex:'28-Mar-26'},
+      {n:'outstanding_inr',t:'Number',d:'Amount outstanding (demand – collected)',req:false,ex:'1250000'},
+      {n:'overdue_days',t:'Number',d:'Days since demand without full payment',req:false,ex:'31'},
+      {n:'rera_no',t:'Text',d:'RERA registration number',req:false,ex:'P52100012345'}
+    ]
+  }
+};
+
+function renderUploadPane(id){
+  const s=UPLOAD_SCHEMAS[id];
+  if(!s) return;
+  const req_count=s.fields.filter(f=>f.req).length;
+  const opt_count=s.fields.filter(f=>!f.req).length;
+  document.getElementById('upane-'+id).innerHTML=`
+    <div class="sec" style="border-left-color:var(--navy)">
+      <div class="sh"><span class="st">${s.title}</span><span class="dtag i" style="background:var(--navy-lt);border-color:rgba(30,58,95,.22);color:var(--navy)">Freq: ${s.freq}</span></div>
+      <div class="sec-sub">${s.desc}</div>
+      <div class="abar g">📁 Source: ${s.source}</div>
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <div class="mn"><div class="mv">${s.fields.length}</div><div class="ml">Total fields</div></div>
+        <div class="mn"><div class="mv" style="color:var(--R)">${req_count}</div><div class="ml">Required</div></div>
+        <div class="mn"><div class="mv" style="color:var(--G)">${opt_count}</div><div class="ml">Optional</div></div>
+      </div>
+      <div class="field-group">
+        <div class="field-group-header"><span class="field-group-title">Field definitions</span><span style="font-size:11px;color:var(--t4)"><span class="req">REQ</span> = required &nbsp;·&nbsp; <span class="opt">OPT</span> = optional</span></div>
+        <div class="field-row hdr"><div>Field name</div><div>Data type</div><div>Description</div><div>Example</div><div>Required</div></div>
+        ${s.fields.map(f=>`<div class="field-row"><div style="font-family:monospace;font-size:11px;color:var(--navy)">${f.n}</div><div style="color:var(--t3)">${f.t}</div><div style="color:var(--t2)">${f.d}</div><div style="color:var(--t4);font-family:monospace;font-size:10px">${f.ex}</div><div><span class="${f.req?'req':'opt'}">${f.req?'REQ':'OPT'}</span></div></div>`).join('')}
+      </div>
+    </div>`;
+}
+
+/* ═══════════════════════════════════════════════
+   FILTER
+════════════════════════════════════════════════ */
+document.getElementById('catFilter').addEventListener('change',function(){
+  const v=this.value;
+  document.querySelectorAll('#active-body tr').forEach(r=>{r.style.opacity=(v==='all'||r.dataset.cat===v)?'1':'0.2';});
+});
+
+/* ═══════════════════════════════════════════════
+   EXPORT CSV
+════════════════════════════════════════════════ */
+function exportCSV(type){
+  let rows,fn;
+  if(type==='portfolio'){
+    rows=[['Project','Sub','Tasks','Completion%','SPI','CPI','BOQ_Cr','Spent_Cr','MaxDelay_d'],...Object.entries(PROJECTS).map(([k,p])=>[p.name,p.sub,p.tasks,p.completion,p.spi,p.cpi,p.boq,p.spent,p.maxDelay])];
+    fn='GA_Portfolio_KPIs.csv';
+  }else{
+    rows=[['Task','Category','Progress%','Status','Delay'],
+      ...ACTIVE.map(t=>[t.n,t.c,t.p,'In Progress',t.d]),
+      ...TOPDELAY.map(t=>[t.n,t.c,t.p,t.s,t.d])];
+    fn='Anantam_E_KPIs.csv';
+  }
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.map(r=>r.join(',')).join('\n'));
+  a.download=fn; a.click();
+}
+
+function downloadTemplate(){
+  const id=document.querySelector('#uploadTabBar .tab.active').dataset.utab;
+  const s=UPLOAD_SCHEMAS[id];
+  if(!s) return;
+  const rows=[s.fields.map(f=>f.n),s.fields.map(f=>f.ex)];
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.map(r=>r.join(',')).join('\n'));
+  a.download=`GA_Template_${id}.csv`; a.click();
+}
+
+/* ═══════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════════ */
+renderPortfolio();rendered.add('portfolio');
+renderUploadPane('task');rendered.add('upload-task');
+</script>
+</body>
+</html>
