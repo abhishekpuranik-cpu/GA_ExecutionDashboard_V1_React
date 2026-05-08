@@ -1161,32 +1161,7 @@ function renderUpcomingActivities(days){
       return (order[a.s]||1)-(order[b.s]||1)||(a.ps-b.ps);
     });
 
-    const rows = tl.map(t=>{
-      const sc = scC2(t.s);
-      const ppct = pc(t.prog);
-      const completing = t.pe >= TODAY && t.pe <= new Date(TODAY.getTime()+days*86400000);
-      const today_flag = t.ps <= TODAY && t.pe >= TODAY && t.s==='In Progress';
-      return `<div class="act-row">
-        <div><div class="act-swatch" style="background:${sc}"></div></div>
-        <div class="act-name" title="${t.n}">
-          ${today_flag?'<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:'+C.amber+';margin-right:5px;vertical-align:middle"></span>':''}
-          ${t.n}
-        </div>
-        <div class="act-dates">${fmtD(t.ps)} → ${fmtD(t.pe)}</div>
-        <div class="act-dur">${durD(t.ps,t.pe)}</div>
-        <div class="act-bar-wrap">
-          <div class="act-bar-track"><div class="act-bar-fill" style="width:${t.prog}%;background:${t.prog>0?ppct:'#e5e7eb'}"></div></div>
-          <span class="act-pct" style="color:${t.prog>0?ppct:'var(--t4)'}">${t.prog}%</span>
-        </div>
-        <div class="act-delay">${t.delay>0?`<span style="color:${t.delay>30?C.red:C.amber};font-weight:700">+${t.delay}d</span>`:`<span style="color:var(--t4)">—</span>`}</div>
-        <div class="act-mem">${t.mem}</div>
-        <div class="act-stat">
-          ${completing&&t.s!=='Completed'?'<span class="bdg bgg" style="font-size:9px">Completing</span>':''}
-          ${!completing?`<span class="bdg ${statCls(t.s)}" style="font-size:9px">${t.s==='Not Started'?'Starting':t.s}</span>`:''}
-        </div>
-      </div>`;
-    }).join('');
-    const treeRows = renderActivityTree(tl);
+    const treeRows = renderActivityTreeRows(tl);
 
     const isOpenByDefault = ipC > 0;
     const uid = 'cat-'+cat.replace(/[^a-z]/gi,'').toLowerCase();
@@ -1206,48 +1181,86 @@ function renderUpcomingActivities(days){
         </div>
       </div>
       <div class="cat-body ${isOpenByDefault?'open':''}" id="${uid}">
-        <div style="padding:6px 8px;border-bottom:1px solid var(--b1);background:#fafbfd">
-          <details>
-            <summary style="cursor:pointer;font-size:11px;color:var(--t3);font-weight:600">Tree view (collapsible)</summary>
-            <div style="margin-top:6px">${treeRows}</div>
-          </details>
-        </div>
         <div class="act-hdr">
           <div></div><div>Task</div><div>Dates</div><div>Dur</div><div>Progress</div><div>Delay</div><div>Assigned</div><div>Status</div>
         </div>
-        ${rows}
+        ${treeRows}
       </div>
     </div>`;
   }).join('');
 }
-function renderActivityTree(tasks){
-  const root={children:{}};
+function renderActivityTreeRows(tasks){
+  const root={name:'root',children:{},tasks:[]};
   (tasks||[]).forEach((t)=>{
     const path=String(t.n||'').split(/\s*[›>]\s*/).map((x)=>String(x||'').trim()).filter(Boolean);
     if(!path.length) return;
     let node=root;
-    path.forEach((part,idx)=>{
-      if(!node.children[part]) node.children[part]={name:part,children:{},leaf:null};
+    path.forEach((part)=>{
+      if(!node.children[part]) node.children[part]={name:part,children:{},tasks:[]};
       node=node.children[part];
-      if(idx===path.length-1) node.leaf=t;
+      node.tasks.push(t);
     });
   });
-  function nodeHtml(map){
-    const keys=Object.keys(map||{});
-    if(!keys.length) return '<div style="font-size:11px;color:var(--t4)">No tree data</div>';
-    return '<ul style="margin:0;padding-left:16px;list-style:disc">'+keys.map((k)=>{
-      const n=map[k];
-      const hasKids=Object.keys(n.children||{}).length>0;
-      const leaf=n.leaf;
-      if(hasKids){
-        return `<li style="margin:2px 0"><details><summary style="cursor:pointer;font-size:11px;color:var(--t2)">${n.name}</summary>${nodeHtml(n.children)}</details></li>`;
-      }
-      const delay=(leaf&&leaf.delay>0)?` <span style="color:${leaf.delay>30?C.red:C.amber};font-weight:700">(+${leaf.delay}d)</span>`:'';
-      const stat=leaf?` <span style="color:var(--t4)">[${leaf.s}]</span>`:'';
-      return `<li style="margin:2px 0;font-size:11px;color:var(--t2)">${n.name}${delay}${stat}</li>`;
-    }).join('')+'</ul>';
+  function summarize(node){
+    const arr=node.tasks||[];
+    if(!arr.length) return null;
+    let minPs=null,maxPe=null,sumProg=0,maxDelay=0;
+    const memSet={}; const stat={done:0,ip:0,ns:0};
+    arr.forEach((t)=>{
+      if(t.ps&&(!minPs||t.ps<minPs)) minPs=t.ps;
+      if(t.pe&&(!maxPe||t.pe>maxPe)) maxPe=t.pe;
+      sumProg+=Number(t.prog||0);
+      maxDelay=Math.max(maxDelay,Number(t.delay||0));
+      String(t.mem||'').split(',').map((x)=>x.trim()).filter(Boolean).forEach((m)=>{memSet[m]=1;});
+      if(t.s==='Completed') stat.done+=1;
+      else if(t.s==='In Progress') stat.ip+=1;
+      else stat.ns+=1;
+    });
+    const avgProg=arr.length?(sumProg/arr.length):0;
+    const members=Object.keys(memSet);
+    const dur=(minPs&&maxPe)?Math.max(1,Math.round((maxPe-minPs)/(1000*60*60*24))+1):0;
+    const s=(stat.done===arr.length)?'Completed':(stat.ip>0||avgProg>0)?'In Progress':'Not Started';
+    return {minPs,maxPe,dur,avgProg,maxDelay,members,status:s,count:arr.length};
   }
-  return nodeHtml(root.children);
+  function statusBadge(s){
+    return `<span class="bdg ${s==='Completed'?'bgg':s==='In Progress'?'bga':'bgs'}" style="font-size:9px">${s==='Not Started'?'Starting':s}</span>`;
+  }
+  function rowHtml(name, lvl, m, isParent){
+    const indent=lvl*14;
+    const marker=isParent?'▸':'•';
+    const p=Math.max(0,Math.min(100,Number(m.avgProg||0)));
+    const pCol=pc(p);
+    const delay=m.maxDelay>0?`<span style="color:${m.maxDelay>30?C.red:C.amber};font-weight:700">+${m.maxDelay}d</span>`:`<span style="color:var(--t4)">—</span>`;
+    const members=m.members.length?`${m.members.slice(0,2).join(', ')}${m.members.length>2?'…':''}`:'—';
+    return `<div class="act-row">
+      <div><div class="act-swatch" style="background:${isParent?'#6b7280':scC2(m.status)}"></div></div>
+      <div class="act-name" title="${name}" style="padding-left:${indent}px;font-weight:${isParent?700:500}">
+        <span style="display:inline-block;width:10px;color:var(--t4);margin-right:4px">${marker}</span>${name}${isParent?` <span style="color:var(--t4);font-size:10px">(${m.count})</span>`:''}
+      </div>
+      <div class="act-dates">${m.minPs&&m.maxPe?`${fmtD(m.minPs)} → ${fmtD(m.maxPe)}`:'—'}</div>
+      <div class="act-dur">${m.dur?`${m.dur}d`:'—'}</div>
+      <div class="act-bar-wrap">
+        <div class="act-bar-track"><div class="act-bar-fill" style="width:${p}%;background:${p>0?pCol:'#e5e7eb'}"></div></div>
+        <span class="act-pct" style="color:${p>0?pCol:'var(--t4)'}">${Math.round(p)}%</span>
+      </div>
+      <div class="act-delay">${delay}</div>
+      <div class="act-mem">${members}</div>
+      <div class="act-stat">${statusBadge(m.status)}</div>
+    </div>`;
+  }
+  function walk(node,lvl){
+    const keys=Object.keys(node.children||{}).sort((a,b)=>a.localeCompare(b));
+    let out='';
+    keys.forEach((k)=>{
+      const c=node.children[k];
+      const m=summarize(c); if(!m) return;
+      const hasKids=Object.keys(c.children||{}).length>0;
+      out+=rowHtml(c.name,lvl,m,hasKids);
+      out+=walk(c,lvl+1);
+    });
+    return out;
+  }
+  return walk(root,0) || '<div class="no-tasks">No tree data for this window.</div>';
 }
 
 function toggleCat(uid){
