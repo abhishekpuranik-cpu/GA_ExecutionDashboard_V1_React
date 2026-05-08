@@ -22,6 +22,7 @@ const C={
   gray:'#9ca3af',grid:'rgba(0,0,0,.07)',tick:'#9ca3af',
   f:'DM Sans,system-ui,sans-serif'
 };
+const GA_DASHBOARD_VERSION = '20260508-kpi';
 const tt={backgroundColor:'#fff',titleColor:'#111827',bodyColor:'#374151',borderColor:'#e4e2dc',borderWidth:1,padding:10,titleFont:{weight:'600',family:C.f},bodyFont:{family:C.f}};
 const gO=(ex={})=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:tt},scales:{x:{grid:{color:C.grid},ticks:{color:C.tick,font:{size:11,family:C.f}},...(ex.sx||{})},y:{grid:{color:C.grid},ticks:{color:C.tick,font:{size:11,family:C.f}},...(ex.sy||{})}},...ex});
 const R={};
@@ -159,6 +160,22 @@ function scC(s){return s==='Completed'?C.green:s==='In Progress'?C.amber:'#d1d5d
 function pc(p){return p>=80?C.green:p>=50?C.amber:C.red}
 function db(d){if(!d)return'<span class="bdg bgg">On schedule</span>';if(d<=14)return`<span class="bdg bga">${d}d</span>`;return`<span class="bdg bgr">${d}d</span>`}
 function fL(v){return v.toLocaleString('en-IN')}
+function pad2(n){return String(n).padStart(2,'0')}
+function runtimeDateLabel(d){
+  const dt=d instanceof Date?d:new Date();
+  return `${pad2(dt.getDate())} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][dt.getMonth()]} ${dt.getFullYear()}`;
+}
+function kpiCard({tone='i',label,value,meta,pill='Live',pillClass='p-i',bar=0,barColor='var(--navy)'}){
+  return `<div class="kc ${tone}"><div class="kl">${label}</div><div class="kv">${value}</div><div class="km">${meta||''}</div><span class="kp ${pillClass}">${pill}</span><div class="kb"><div class="kbf" style="width:${Math.max(0,Math.min(100,bar))}%;background:${barColor}"></div></div></div>`;
+}
+function metricTone(v, ok=70, warn=45){ return v>=ok?'ok':v>=warn?'w':'b'; }
+function metricPillClass(v, ok=70, warn=45){ return v>=ok?'p-ok':v>=warn?'p-w':'p-b'; }
+function updateRuntimeMeta(){
+  const nav=document.getElementById('nav-version-hint');
+  if(nav) nav.textContent=`Construction execution · ${runtimeDateLabel(new Date())} · v${GA_DASHBOARD_VERSION}`;
+  const sub=document.getElementById('portfolio-sub');
+  if(sub) sub.innerHTML=`<span class="pulse"></span>${Object.keys(PROJECTS).length} active projects · ${runtimeDateLabel(new Date())}`;
+}
 
 /* ═══════════════════════════════════════════════
    VIEW SWITCHING
@@ -287,7 +304,7 @@ function onProjChange(v){
   currentProject = v;
   const p=PROJECTS[v];
   document.getElementById('proj-brand').innerHTML=`${p.name} · <span>${p.sub}</span>`;
-  document.getElementById('proj-sub').innerHTML=`<span class="pulse"></span>Construction data · 09 Apr 2026 · ${p.tasks} tasks`;
+  document.getElementById('proj-sub').innerHTML=`<span class="pulse"></span>Construction data · ${runtimeDateLabel(new Date())} · ${p.tasks} tasks`;
   if (v !== 'p1') {
     const factor = Math.max(0.25, Math.min(1.4, p.completion / 55));
     L1 = L1_DEFAULT.map((x) => ({ ...x, p: Math.max(0, Math.min(100, Math.round(x.p * factor * 10) / 10)), d: Math.max(0, Math.round(x.d * (1.2 - factor / 1.6))) }));
@@ -306,12 +323,82 @@ function onProjChange(v){
     applyP1BuildingContext(currentBuilding);
   }
   rerunAfterTaskImport();
+  renderProjectKpis();
 }
 
 /* ═══════════════════════════════════════════════
    TAB SWITCHING (project)
 ════════════════════════════════════════════════ */
 const PROJ_RENDER={progress:renderProgress,schedule:renderSchedule,ops:renderOps,performance:renderPerformance,finance:renderFinance,gaps:null};
+
+/* ═══════════════════════════════════════════════
+   KPI PANELS (DYNAMIC)
+════════════════════════════════════════════════ */
+function renderPortfolioKpis(){
+  const el=document.getElementById('portfolio-kpi-cards'); if(!el) return;
+  const list=Object.values(PROJECTS);
+  const wt=Math.max(1,list.reduce((s,p)=>s+(Number(p.tasks)||0),0));
+  const wspi=list.reduce((s,p)=>s+((Number(p.tasks)||0)*(Number(p.spi)||0)),0)/wt;
+  const wcpi=list.reduce((s,p)=>s+((Number(p.tasks)||0)*(Number(p.cpi)||0)),0)/wt;
+  const wcomp=list.reduce((s,p)=>s+((Number(p.tasks)||0)*(Number(p.completion)||0)),0)/wt;
+  const critical=list.filter((p)=>(Number(p.spi)||0)<0.85).length;
+  const totalBoq=list.reduce((s,p)=>s+(Number(p.boq)||0),0);
+  const totalSpent=list.reduce((s,p)=>s+(Number(p.spent)||0),0);
+  const budgetUse=totalBoq>0?(totalSpent/totalBoq*100):0;
+  el.innerHTML = [
+    kpiCard({tone:metricTone(wspi*100,100,90),label:'Portfolio SPI',value:wspi.toFixed(2),meta:'Weighted avg across projects',pill:wspi>=1?'On plan':wspi>=0.9?'Watch':'Recovery needed',pillClass:metricPillClass(wspi*100,100,90),bar:wspi*100,barColor:wspi>=1?'var(--G)':wspi>=0.9?'var(--A)':'var(--R)'}),
+    kpiCard({tone:metricTone(wcpi*100,100,95),label:'Portfolio CPI',value:wcpi.toFixed(2),meta:'Weighted cost efficiency',pill:wcpi>=1?'Healthy':wcpi>=0.95?'Watch':'Overspend risk',pillClass:metricPillClass(wcpi*100,100,95),bar:wcpi*100,barColor:wcpi>=1?'var(--G)':wcpi>=0.95?'var(--A)':'var(--R)'}),
+    kpiCard({tone:metricTone(wcomp,55,30),label:'Avg completion',value:`${wcomp.toFixed(1)}<small style="font-size:13px;color:var(--t4)">%</small>`,meta:'Weighted by task count',pill:wcomp>=55?'Momentum strong':wcomp>=30?'Mid-cycle':'Slow progress',pillClass:metricPillClass(wcomp,55,30),bar:wcomp,barColor:wcomp>=55?'var(--G)':wcomp>=30?'var(--A)':'var(--R)'}),
+    kpiCard({tone:critical===0?'ok':critical<=1?'w':'b',label:'Critical projects',value:String(critical),meta:'Projects with SPI < 0.85',pill:critical===0?'Under control':critical<=1?'Attention needed':'Recovery plan',pillClass:critical===0?'p-ok':critical<=1?'p-w':'p-b',bar:(critical/list.length)*100,barColor:critical===0?'var(--G)':critical<=1?'var(--A)':'var(--R)'}),
+    kpiCard({tone:'ok',label:'Total BOQ',value:`₹${totalBoq.toFixed(0)} Cr`,meta:'Across active projects',pill:'Budget baseline',pillClass:'p-ok',bar:70,barColor:'var(--G)'}),
+    kpiCard({tone:metricTone(100-budgetUse,35,20),label:'Budget headroom',value:`₹${Math.max(0,totalBoq-totalSpent).toFixed(1)} Cr`,meta:`Spent ₹${totalSpent.toFixed(1)} Cr (${budgetUse.toFixed(1)}%)`,pill:budgetUse<=75?'Comfortable':budgetUse<=90?'Tight':'High pressure',pillClass:budgetUse<=75?'p-ok':budgetUse<=90?'p-w':'p-b',bar:budgetUse,barColor:budgetUse<=75?'var(--G)':budgetUse<=90?'var(--A)':'var(--R)'})
+  ].join('');
+}
+function renderProjectKpis(){
+  const p=PROJECTS[currentProject]||PROJECTS.p1;
+  const tasks=Math.max(1,Number(p.tasks)||0);
+  const done=Number(p.done)||0, ip=Number(p.ip)||0, ns=Math.max(0,tasks-done-ip);
+  const completion=Math.max(0,Math.min(100,Number(p.completion)||0));
+  const maxDelay=Math.max(0,Number(p.maxDelay)||0);
+  const avgDelayRaw=CATS.filter((c)=>Number(c.ad)>0).map((c)=>Number(c.ad));
+  const avgDelay=avgDelayRaw.length?avgDelayRaw.reduce((s,v)=>s+v,0)/avgDelayRaw.length:0;
+  const plannedCompletion=Math.max(completion,Math.min(100,(completion/Math.max(0.1,Number(p.spi)||1))));
+  const variancePts=completion-plannedCompletion;
+  const designCat=CATS.find((c)=>String(c.c).toLowerCase()==='design');
+  const designSla=Math.max(0,Math.min(100,100-((designCat&&Number(designCat.ad))?Number(designCat.ad)/2:0)));
+  const delayedTaskCount=TOPDELAY.filter((t)=>Number(t.d)>0).length;
+  const delayedShare=Math.round((delayedTaskCount/Math.max(1,TOPDELAY.length))*100);
+  const progressEl=document.getElementById('progress-kpi-cards');
+  if(progressEl) progressEl.innerHTML=[
+    kpiCard({tone:metricTone(completion,55,30),label:'Overall progress',value:`${completion.toFixed(1)}<small style="font-size:13px;color:var(--t4)">%</small>`,meta:`${done} done / ${tasks} tasks`,pill:completion>=55?'Strong pace':completion>=30?'Mid-cycle':'Behind target',pillClass:metricPillClass(completion,55,30),bar:completion,barColor:completion>=55?'var(--G)':completion>=30?'var(--A)':'var(--R)'}),
+    kpiCard({tone:'ok',label:'Completed',value:String(done),meta:'Tasks closed',pill:`${Math.round(done/tasks*100)}% of scope`,pillClass:'p-ok',bar:Math.round(done/tasks*100),barColor:'var(--G)'}),
+    kpiCard({tone:'w',label:'In progress',value:String(ip),meta:'Execution underway',pill:`${Math.round(ip/tasks*100)}% active`,pillClass:'p-w',bar:Math.round(ip/tasks*100),barColor:'var(--A)'}),
+    kpiCard({tone:metricTone(100-(ns/tasks*100),60,35),label:'Not started',value:String(ns),meta:`${Math.round(ns/tasks*100)}% of scope`,pill:ns/tasks<=0.35?'Healthy queue':ns/tasks<=0.6?'Watch':'Front-loaded risk',pillClass:ns/tasks<=0.35?'p-ok':ns/tasks<=0.6?'p-w':'p-b',bar:Math.round(ns/tasks*100),barColor:ns/tasks<=0.35?'var(--G)':ns/tasks<=0.6?'var(--A)':'var(--R)'}),
+    kpiCard({tone:maxDelay<=30?'ok':maxDelay<=90?'w':'b',label:'Max delay',value:`${Math.round(maxDelay)}<small style="font-size:13px;color:var(--t4)">d</small>`,meta:'Longest overdue task',pill:maxDelay<=30?'Under control':maxDelay<=90?'Needs push':'Critical path risk',pillClass:maxDelay<=30?'p-ok':maxDelay<=90?'p-w':'p-b',bar:Math.min(100,maxDelay/2),barColor:maxDelay<=30?'var(--G)':maxDelay<=90?'var(--A)':'var(--R)'})
+  ].join('');
+  const scheduleEl=document.getElementById('schedule-kpi-cards');
+  if(scheduleEl){
+    const spi=Number(p.spi)||0;
+    const handoverRisk=Math.max(0,Math.round(maxDelay*0.4));
+    scheduleEl.innerHTML=[
+      kpiCard({tone:metricTone(spi*100,100,90),label:'SPI',value:spi.toFixed(2),meta:'Actual vs planned progress',pill:spi>=1?'On plan':spi>=0.9?'Watch':'Behind plan',pillClass:metricPillClass(spi*100,100,90),bar:spi*100,barColor:spi>=1?'var(--G)':spi>=0.9?'var(--A)':'var(--R)'}),
+      kpiCard({tone:avgDelay<=20?'ok':avgDelay<=60?'w':'b',label:'Avg delay',value:`${avgDelay.toFixed(0)}<small style="font-size:13px;color:var(--t4)">d</small>`,meta:'Across delayed categories',pill:avgDelay<=20?'Stable':avgDelay<=60?'Watch':'Critical',pillClass:avgDelay<=20?'p-ok':avgDelay<=60?'p-w':'p-b',bar:Math.min(100,avgDelay),barColor:avgDelay<=20?'var(--G)':avgDelay<=60?'var(--A)':'var(--R)'}),
+      kpiCard({tone:maxDelay<=30?'ok':maxDelay<=90?'w':'b',label:'Max delay',value:`${Math.round(maxDelay)}<small style="font-size:13px;color:var(--t4)">d</small>`,meta:'Single worst task lag',pill:maxDelay<=30?'Low':maxDelay<=90?'Elevated':'Severe',pillClass:maxDelay<=30?'p-ok':maxDelay<=90?'p-w':'p-b',bar:Math.min(100,maxDelay/2),barColor:maxDelay<=30?'var(--G)':maxDelay<=90?'var(--A)':'var(--R)'}),
+      kpiCard({tone:handoverRisk<=30?'ok':handoverRisk<=75?'w':'b',label:'Handover risk',value:`${handoverRisk}<small style="font-size:13px;color:var(--t4)">d</small>`,meta:'Projected slip from current lag',pill:handoverRisk<=30?'Contained':handoverRisk<=75?'Monitor':'Escalate',pillClass:handoverRisk<=30?'p-ok':handoverRisk<=75?'p-w':'p-b',bar:Math.min(100,handoverRisk),barColor:handoverRisk<=30?'var(--G)':handoverRisk<=75?'var(--A)':'var(--R)'})
+    ].join('');
+  }
+  const opsEl=document.getElementById('ops-kpi-cards');
+  if(opsEl){
+    const cpi=Number(p.cpi)||0;
+    opsEl.innerHTML=[
+      kpiCard({tone:metricTone((Number(p.spi)||0)*100,100,90),label:'SPI',value:(Number(p.spi)||0).toFixed(2),meta:'Target ≥ 1.00',pill:(Number(p.spi)||0)>=1?'Healthy':(Number(p.spi)||0)>=0.9?'Watch':'Critical',pillClass:metricPillClass((Number(p.spi)||0)*100,100,90),bar:(Number(p.spi)||0)*100,barColor:(Number(p.spi)||0)>=1?'var(--G)':(Number(p.spi)||0)>=0.9?'var(--A)':'var(--R)'}),
+      kpiCard({tone:metricTone(cpi*100,100,95),label:'CPI',value:cpi.toFixed(2),meta:'Target ≥ 1.00',pill:cpi>=1?'Cost healthy':cpi>=0.95?'Watch':'Overspend risk',pillClass:metricPillClass(cpi*100,100,95),bar:cpi*100,barColor:cpi>=1?'var(--G)':cpi>=0.95?'var(--A)':'var(--R)'}),
+      kpiCard({tone:variancePts>=-5?'ok':variancePts>=-12?'w':'b',label:'Progress vs plan',value:`${completion.toFixed(1)}<small style="font-size:12px">%</small>`,meta:`Plan baseline: ${plannedCompletion.toFixed(1)}%`,pill:`${variancePts.toFixed(1)} pts`,pillClass:variancePts>=-5?'p-ok':variancePts>=-12?'p-w':'p-b',bar:Math.max(5,completion),barColor:variancePts>=-5?'var(--G)':variancePts>=-12?'var(--A)':'var(--R)'}),
+      kpiCard({tone:designSla>=75?'ok':designSla>=45?'w':'b',label:'Design SLA',value:`${designSla.toFixed(0)}<small style="font-size:12px">%</small>`,meta:'Derived from design delay load',pill:designSla>=75?'Stable':designSla>=45?'Watch':'Bottleneck',pillClass:designSla>=75?'p-ok':designSla>=45?'p-w':'p-b',bar:designSla,barColor:designSla>=75?'var(--G)':designSla>=45?'var(--A)':'var(--R)'}),
+      kpiCard({tone:delayedShare<=25?'ok':delayedShare<=50?'w':'b',label:'Delay exposure',value:`${delayedShare}<small style="font-size:12px">%</small>`,meta:`${delayedTaskCount} delayed tasks in critical list`,pill:delayedShare<=25?'Controlled':delayedShare<=50?'Watch':'High risk',pillClass:delayedShare<=25?'p-ok':delayedShare<=50?'p-w':'p-b',bar:delayedShare,barColor:delayedShare<=25?'var(--G)':delayedShare<=50?'var(--A)':'var(--R)'})
+    ].join('');
+  }
+}
 
 /* ═══════════════════════════════════════════════
    PORTFOLIO RENDER
@@ -390,6 +477,7 @@ function renderPortfolio(){
       <td><button class="btn" style="padding:4px 10px;font-size:10px;height:26px" onclick="drillProject('${pid}')">View →</button></td>
     </tr>`}).join('')
   }</tbody>`;
+  renderPortfolioKpis();
 }
 
 function drillProject(pid){
@@ -684,6 +772,9 @@ function tryRestorePersistedImport() {
 }
 
 function rerunAfterTaskImport() {
+  updateRuntimeMeta();
+  renderPortfolioKpis();
+  renderProjectKpis();
   if (document.getElementById('proj-cards')) renderPortfolio();
   if (document.getElementById('wbs-list')) renderProgress();
   if (document.getElementById('milestone-list')) renderSchedule();
@@ -1699,6 +1790,7 @@ export function mountGADashboardV4() {
   window.addEventListener('resize', onWinResize);
 
   tryRestorePersistedImport();
+  updateRuntimeMeta();
   syncTreeSelectors();
   applyTreeSelectionToDashboard();
   initDashboardLibraryPanel();

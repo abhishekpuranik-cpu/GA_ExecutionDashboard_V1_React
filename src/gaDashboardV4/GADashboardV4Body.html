@@ -31,7 +31,7 @@
     <option value="d">D Building</option>
     <option value="e" selected>E Building</option>
   </select>
-  <span class="nav-hint">Construction execution · Apr 2026</span>
+  <span class="nav-hint" id="nav-version-hint">Construction execution</span>
 </nav>
 
 <!-- ═══════════════════════════════════════════════
@@ -43,7 +43,7 @@
   <div class="topbar">
     <div>
       <div class="brand">Golden Abodes · <span>Portfolio Execution Overview</span></div>
-      <div class="sub"><span class="pulse"></span>4 active projects · 09 Apr 2026</div>
+      <div class="sub" id="portfolio-sub"><span class="pulse"></span>4 active projects</div>
     </div>
     <div class="actions">
       <button class="btn" onclick="exportCSV('portfolio')">↓ Export CSV</button>
@@ -52,15 +52,8 @@
 
   <!-- Portfolio KPIs -->
   <div class="sec">
-    <div class="sh"><span class="st">Portfolio execution pulse</span><span class="dtag">Live · 09 Apr 2026</span></div>
-    <div class="kg k6">
-      <div class="kc w"><div class="kl">Portfolio SPI</div><div class="kv">0.87</div><div class="km">Weighted avg across projects</div><span class="kp p-w">Below 1.0 target</span><div class="kb"><div class="kbf" style="width:87%;background:var(--A)"></div></div></div>
-      <div class="kc w"><div class="kl">Portfolio CPI ★</div><div class="kv">0.94</div><div class="km">Dummy — BOQ not loaded</div><span class="kp p-w">Overspend risk</span><div class="kb"><div class="kbf" style="width:94%;background:var(--A)"></div></div></div>
-      <div class="kc w"><div class="kl">Avg completion</div><div class="kv">42<small style="font-size:13px;color:var(--t4)">%</small></div><div class="km">Weighted by task count</div><span class="kp p-w">Behind schedule</span><div class="kb"><div class="kbf" style="width:42%;background:var(--A)"></div></div></div>
-      <div class="kc b"><div class="kl">Critical delays</div><div class="kv">3</div><div class="km">Projects with SPI &lt; 0.85</div><span class="kp p-b">Needs recovery plan</span><div class="kb"><div class="kbf" style="width:75%;background:var(--R)"></div></div></div>
-      <div class="kc ok"><div class="kl">Total BOQ value ★</div><div class="kv">₹148 Cr</div><div class="km">Across 4 projects</div><span class="kp p-ok">As per estimates</span><div class="kb"><div class="kbf" style="width:70%;background:var(--G)"></div></div></div>
-      <div class="kc b"><div class="kl">Receivables gap ★</div><div class="kv">₹66 Cr</div><div class="km">Outstanding across portfolio</div><span class="kp p-b">Cash flow pressure</span><div class="kb"><div class="kbf" style="width:80%;background:var(--R)"></div></div></div>
-    </div>
+    <div class="sh"><span class="st">Portfolio execution pulse</span><span class="dtag">Live</span></div>
+    <div class="kg k6" id="portfolio-kpi-cards"></div>
   </div>
 
   <!-- Project cards -->
@@ -139,16 +132,10 @@
 
   <!-- PROGRESS PANE -->
   <div id="pane-progress" class="pane active">
-    <div class="abar r">⚠ Drawing package <strong>228 days behind plan</strong> · Design avg delay 85 days · Electrical (72), Plumbing (62), Tiling (121) — zero tasks started</div>
+    <div class="abar r">⚠ KPI panel below auto-refreshes from imported task/progress data.</div>
     <div class="sec">
-      <div class="sh"><span class="st">Project pulse</span><span class="dtag">Live · 09 Apr 2026</span></div>
-      <div class="kg k5">
-        <div class="kc w"><div class="kl">Overall progress</div><div class="kv">12.6<small style="font-size:13px;color:var(--t4)">%</small></div><div class="km">53 done / 659 tasks</div><span class="kp p-w">Below milestone</span><div class="kb"><div class="kbf" style="width:12.6%;background:var(--A)"></div></div></div>
-        <div class="kc ok"><div class="kl">Completed</div><div class="kv">53</div><div class="km">Foundations + Piling</div><span class="kp p-ok">Substructure clear</span><div class="kb"><div class="kbf" style="width:8%;background:var(--G)"></div></div></div>
-        <div class="kc w"><div class="kl">In progress</div><div class="kv">22</div><div class="km">Civil + Design active</div><span class="kp p-w">3.3% of scope</span><div class="kb"><div class="kbf" style="width:3.3%;background:var(--A)"></div></div></div>
-        <div class="kc b"><div class="kl">Not started</div><div class="kv">584</div><div class="km">88.6% of scope</div><span class="kp p-b">Schedule risk</span><div class="kb"><div class="kbf" style="width:88%;background:var(--R)"></div></div></div>
-        <div class="kc b"><div class="kl">Max drawing delay</div><div class="kv">228<small style="font-size:13px;color:var(--t4)">d</small></div><div class="km">Architecture drawing</div><span class="kp p-b">Critical path risk</span><div class="kb"><div class="kbf" style="width:85%;background:var(--R)"></div></div></div>
-      </div>
+      <div class="sh"><span class="st">Project pulse</span><span class="dtag">Live</span></div>
+      <div class="kg k5" id="progress-kpi-cards"></div>
       <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:12px">
         <span class="bdg bgg">✓ Piling</span><span class="bdg bgg">✓ Foundations</span><span class="bdg bgg">✓ Raft</span><span class="bdg bga">⟳ RCC 73.7%</span><span class="bdg bga">⟳ Basement 54.3%</span><span class="bdg bgr">✕ Electrical 0/72</span><span class="bdg bgr">✕ Plumbing 0/62</span><span class="bdg bgr">✕ Tiling 0/121</span>
       </div>
@@ -161,12 +148,7 @@
   <!-- SCHEDULE PANE -->
   <div id="pane-schedule" class="pane">
     <div class="abar a">⚠ 2nd slab at 35% vs target 80% · Drawing package critically delayed · Handover flagged +90d</div>
-    <div class="sec"><div class="sh"><span class="st">Schedule KPIs</span></div><div class="kg k4">
-      <div class="kc b"><div class="kl">SPI</div><div class="kv">0.77</div><div class="km">Actual vs planned progress</div><span class="kp p-b">23% behind plan</span><div class="kb"><div class="kbf" style="width:77%;background:var(--R)"></div></div></div>
-      <div class="kc b"><div class="kl">Avg delay</div><div class="kv">92<small style="font-size:13px;color:var(--t4)">d</small></div><div class="km">68 tasks with delay</div><span class="kp p-b">Critical</span><div class="kb"><div class="kbf" style="width:80%;background:var(--R)"></div></div></div>
-      <div class="kc b"><div class="kl">Max delay</div><div class="kv">241<small style="font-size:13px;color:var(--t4)">d</small></div><div class="km">Architecture drawing</div><span class="kp p-b">8 months behind</span><div class="kb"><div class="kbf" style="width:95%;background:var(--R)"></div></div></div>
-      <div class="kc w"><div class="kl">Handover risk</div><div class="kv">90+<small style="font-size:13px;color:var(--t4)">d</small></div><div class="km">Already flagged in tool</div><span class="kp p-w">3+ months at risk</span><div class="kb"><div class="kbf" style="width:70%;background:var(--A)"></div></div></div>
-    </div></div>
+    <div class="sec"><div class="sh"><span class="st">Schedule KPIs</span></div><div class="kg k4" id="schedule-kpi-cards"></div></div>
     <!-- Upcoming Scheduled Activities -->
     <div class="sec" style="border-left-color:var(--navy);margin-top:0">
       <div class="win-bar">
@@ -198,13 +180,7 @@
   <!-- OPERATIONAL PANE -->
   <div id="pane-ops" class="pane">
     <div class="abar i">ℹ KPIs marked ★ use dummy data. Integrate workforce attendance, quality system, safety register and material tracker to activate.</div>
-    <div class="sec"><div class="sh"><span class="st">Operational KPIs</span></div><div class="kg k5">
-      <div class="kc b"><div class="kl">SPI</div><div class="kv">0.77</div><div class="km">Target ≥ 1.0</div><span class="kp p-b">Critical</span><div class="kb"><div class="kbf" style="width:77%;background:var(--R)"></div></div></div>
-      <div class="kc w"><div class="kl">CPI ★</div><div class="kv">0.94</div><div class="km">Target ≥ 1.0</div><span class="kp p-w">Overspend risk</span><div class="kb"><div class="kbf" style="width:94%;background:var(--A)"></div></div></div>
-      <div class="kc b"><div class="kl">Progress vs plan</div><div class="kv">12.6<small style="font-size:12px">%</small></div><div class="km">Plan: 22% by Apr</div><span class="kp p-b">9.4 pts behind</span><div class="kb"><div class="kbf" style="width:57%;background:var(--R)"></div></div></div>
-      <div class="kc w"><div class="kl">Quality score ★</div><div class="kv">84<small style="font-size:12px">%</small></div><div class="km">Target ≥ 90%</div><span class="kp p-w">Below threshold</span><div class="kb"><div class="kbf" style="width:84%;background:var(--A)"></div></div></div>
-      <div class="kc b"><div class="kl">Design SLA</div><div class="kv">38<small style="font-size:12px">%</small></div><div class="km">Design tasks on schedule</div><span class="kp p-b">Critical bottleneck</span><div class="kb"><div class="kbf" style="width:38%;background:var(--R)"></div></div></div>
-    </div></div>
+    <div class="sec"><div class="sh"><span class="st">Operational KPIs</span></div><div class="kg k5" id="ops-kpi-cards"></div></div>
     <div class="g22">
       <div class="sec"><div class="sh"><span class="st">Cumulative completion trend ★</span><span class="dtag d">Dummy</span></div><div class="cw"><canvas id="trendChart"></canvas></div><div class="leg"><span><span class="ld" style="background:#0f6d50"></span>Actual</span><span><span class="ld" style="background:#d1d5db"></span>Planned</span></div></div>
       <div class="sec"><div class="sh"><span class="st">Category completion %</span><span class="dtag">Live</span></div><div class="cw"><canvas id="readinessChart"></canvas></div></div>
