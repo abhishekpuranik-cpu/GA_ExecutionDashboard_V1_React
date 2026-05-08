@@ -1,15 +1,15 @@
 /* Extracted from GA_Dashboard_v4 (1).html — do not edit for design parity */
 :root{
-  --canvas:#f4f3f0;--surface:#ffffff;--s2:#faf9f7;
-  --b1:#e4e2dc;--b2:#d2cfc7;
-  --t1:#111827;--t2:#374151;--t3:#6b7280;--t4:#9ca3af;
-  --navy:#1e3a5f;--navy-lt:#e8eef6;
-  --gold:#96690b;--gold-lt:#fdf4e3;
-  --G:#0f6d50;--G-lt:#edf7f3;
-  --A:#a16207;--A-lt:#fefce8;
+  --canvas:#f8fafc;--surface:#ffffff;--s2:#f9fbff;
+  --b1:#dbe3ef;--b2:#c7d5e8;
+  --t1:#0f172a;--t2:#334155;--t3:#64748b;--t4:#94a3b8;
+  --navy:#1e3a8a;--navy-lt:#e8eefc;
+  --gold:#a16207;--gold-lt:#fef3c7;
+  --G:#15803d;--G-lt:#ecfdf3;
+  --A:#b45309;--A-lt:#fff7ed;
   --R:#b91c1c;--R-lt:#fef2f2;
-  --P:#6d28d9;--P-lt:#f5f3ff;
-  --T:#0d7a6e;--T-lt:#edfaf8;
+  --P:#7c3aed;--P-lt:#f5f3ff;
+  --T:#0f766e;--T-lt:#f0fdfa;
   --sh1:0 1px 3px rgba(17,24,39,.06),0 1px 2px rgba(17,24,39,.04);
   --sh2:0 4px 16px rgba(17,24,39,.07),0 2px 6px rgba(17,24,39,.04);
   --r:6px;--rl:10px;

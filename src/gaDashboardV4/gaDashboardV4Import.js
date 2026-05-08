@@ -343,6 +343,11 @@ export function parseTaskCSV(text, today = new Date()) {
  * @param {Date} today
  */
 export function buildSlicesFromTasks(tasks, today) {
+  const normPct = (val) => {
+    const n = Number(val);
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, Math.min(100, n));
+  };
   const l1Map = new Map();
   for (const t of tasks) {
     const l1 = t.levels[0] || t.levels.find((x) => x) || t.cat || 'General';
@@ -352,7 +357,7 @@ export function buildSlicesFromTasks(tasks, today) {
 
   const L1 = [];
   for (const [n, arr] of l1Map) {
-    const avgP = arr.length ? arr.reduce((s, x) => s + x.prog, 0) / arr.length : 0;
+    const avgP = arr.length ? arr.reduce((s, x) => s + normPct(x.prog), 0) / arr.length : 0;
     const maxD = arr.length ? Math.max(...arr.map((x) => x.delay)) : 0;
     const anyIp = arr.some((x) => x.status === 'In Progress');
     const allDone = arr.every((x) => x.status === 'Completed');
@@ -368,7 +373,7 @@ export function buildSlicesFromTasks(tasks, today) {
     if (!catMap.has(c)) catMap.set(c, { t: 0, d: 0, i: 0, n: 0, sumP: 0, sumD: 0, cntD: 0 });
     const o = catMap.get(c);
     o.t += 1;
-    o.sumP += t.prog;
+    o.sumP += normPct(t.prog);
     if (t.status === 'Completed') o.d += 1;
     else if (t.status === 'In Progress') o.i += 1;
     else o.n += 1;
@@ -392,7 +397,7 @@ export function buildSlicesFromTasks(tasks, today) {
     .filter((t) => t.status === 'In Progress')
     .sort((a, b) => b.delay - a.delay)
     .slice(0, 18)
-    .map((t) => ({ n: t.name, c: t.cat, p: Math.round(t.prog * 10) / 10, d: t.delay, m: t.tags || 'Unassigned' }));
+    .map((t) => ({ n: t.name, c: t.cat, p: Math.round(normPct(t.prog) * 10) / 10, d: t.delay, m: t.tags || 'Unassigned' }));
 
   const TOPDELAY = [...tasks]
     .filter((t) => t.delay > 0)
@@ -401,7 +406,7 @@ export function buildSlicesFromTasks(tasks, today) {
     .map((t) => ({
       n: t.name,
       c: t.cat,
-      p: Math.round(t.prog * 10) / 10,
+      p: Math.round(normPct(t.prog) * 10) / 10,
       d: t.delay,
       s: t.status,
     }));
@@ -420,7 +425,7 @@ export function buildSlicesFromTasks(tasks, today) {
       cat: t.cat,
       ps: t.ps,
       pe: t.pe,
-      prog: Math.round(t.prog * 10) / 10,
+      prog: Math.round(normPct(t.prog) * 10) / 10,
       s: t.status,
       delay: t.delay,
       mem: t.tags || '—',
@@ -432,16 +437,16 @@ export function buildSlicesFromTasks(tasks, today) {
   const slabTasks = tasks.filter((t) => slabRe.test(t.name) || slabRe.test(t.leaf));
   const slabs = slabTasks.slice(0, 24).map((t) => ({
     n: t.leaf || t.name,
-    p: Math.round(t.prog * 10) / 10,
+    p: Math.round(normPct(t.prog) * 10) / 10,
     s: t.status,
     d: t.delay,
   }));
 
   const pctRows = tasks.filter((t) => (t.unit || '').toLowerCase() === '%' || t.unit === '%');
   const avgCompletion = pctRows.length
-    ? pctRows.reduce((s, t) => s + t.prog, 0) / pctRows.length
+    ? pctRows.reduce((s, t) => s + normPct(t.prog), 0) / pctRows.length
     : tasks.length
-      ? tasks.reduce((s, t) => s + t.prog, 0) / tasks.length
+      ? tasks.reduce((s, t) => s + normPct(t.prog), 0) / tasks.length
       : 0;
 
   const maxDelay = tasks.length ? Math.max(0, ...tasks.map((t) => t.delay)) : 0;

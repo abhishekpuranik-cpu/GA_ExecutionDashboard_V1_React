@@ -8,13 +8,25 @@
   <button class="nav-view-btn" onclick="showView('project',this)">Project</button>
   <button class="nav-view-btn" onclick="showView('upload',this)">Data Upload</button>
   <div class="nav-sep"></div>
-  <select class="nav-proj-sel" id="projSel" onchange="onProjChange(this.value)">
+  <select class="nav-proj-sel" id="treeProjSel" onchange="onTreeProjectChange(this.value)">
+    <option value="all">All Projects</option>
+  </select>
+  <select class="nav-proj-sel" id="treePhaseSel" onchange="onTreePhaseChange(this.value)">
+    <option value="all">All Phases</option>
+  </select>
+  <select class="nav-proj-sel" id="treeBldSel" onchange="onTreeBuildingChange(this.value)">
+    <option value="all">All Buildings</option>
+  </select>
+  <button class="nav-view-btn" onclick="addProjectTreeNode()">+ Add Project</button>
+  <button class="nav-view-btn" onclick="editProjectTreeNode()">Edit Project</button>
+  <button class="nav-view-btn" onclick="deleteProjectTreeNode()">Delete Project</button>
+  <select class="nav-proj-sel" id="projSel" onchange="onProjChange(this.value)" style="display:none">
     <option value="p1">Anantam Signature — E Building</option>
     <option value="p2">GA Residences — Pimpri</option>
     <option value="p3">GA Heights — Mumbai</option>
     <option value="p4">GA Villas — Goa</option>
   </select>
-  <select class="nav-proj-sel" id="bldSel" onchange="onBuildingChange(this.value)">
+  <select class="nav-proj-sel" id="bldSel" onchange="onBuildingChange(this.value)" style="display:none">
     <option value="all">All buildings</option>
     <option value="d">D Building</option>
     <option value="e" selected>E Building</option>
@@ -141,10 +153,7 @@
         <span class="bdg bgg">✓ Piling</span><span class="bdg bgg">✓ Foundations</span><span class="bdg bgg">✓ Raft</span><span class="bdg bga">⟳ RCC 73.7%</span><span class="bdg bga">⟳ Basement 54.3%</span><span class="bdg bgr">✕ Electrical 0/72</span><span class="bdg bgr">✕ Plumbing 0/62</span><span class="bdg bgr">✕ Tiling 0/121</span>
       </div>
     </div>
-    <div class="g22">
-      <div class="sec"><div class="sh"><span class="st">WBS L1 work packages</span><span class="dtag">Live</span></div><div id="wbs-list"></div></div>
-      <div class="sec"><div class="sh"><span class="st">Task status by category</span><span class="dtag">Live</span></div><div class="cw"><canvas id="catChart"></canvas></div><div class="leg"><span><span class="ld" style="background:#0f6d50"></span>Completed</span><span><span class="ld" style="background:#a16207"></span>In progress</span><span><span class="ld" style="background:#d1d5db"></span>Not started</span></div></div>
-    </div>
+    <div class="sec"><div class="sh"><span class="st">Task status by category</span><span class="dtag">Live</span></div><div class="cw"><canvas id="catChart"></canvas></div><div class="leg"><span><span class="ld" style="background:#0f6d50"></span>Completed</span><span><span class="ld" style="background:#a16207"></span>In progress</span><span><span class="ld" style="background:#d1d5db"></span>Not started</span></div></div>
     <div class="sec"><div class="sh"><span class="st">Active in-progress tasks</span><span class="dtag">Live · 09 Apr 2026</span></div><table class="tbl"><thead><tr><th>Task</th><th>Category</th><th>Progress</th><th>Delay</th><th>Signal</th></tr></thead><tbody id="active-body"></tbody></table></div>
     <div class="sec"><div class="sh"><span class="st">Category readiness</span><span class="dtag">Live</span></div><div id="cat-prog-list"></div></div>
   </div>
@@ -158,14 +167,6 @@
       <div class="kc b"><div class="kl">Max delay</div><div class="kv">241<small style="font-size:13px;color:var(--t4)">d</small></div><div class="km">Architecture drawing</div><span class="kp p-b">8 months behind</span><div class="kb"><div class="kbf" style="width:95%;background:var(--R)"></div></div></div>
       <div class="kc w"><div class="kl">Handover risk</div><div class="kv">90+<small style="font-size:13px;color:var(--t4)">d</small></div><div class="km">Already flagged in tool</div><span class="kp p-w">3+ months at risk</span><div class="kb"><div class="kbf" style="width:70%;background:var(--A)"></div></div></div>
     </div></div>
-    <div class="g22">
-      <div class="sec"><div class="sh"><span class="st">Milestone tracker</span></div><div id="milestone-list"></div></div>
-      <div class="sec"><div class="sh"><span class="st">Avg delay by category</span></div><div class="cw"><canvas id="delayChart"></canvas></div></div>
-    </div>
-    <div class="g22">
-      <div class="sec"><div class="sh"><span class="st">Top 15 most delayed tasks</span></div><table class="tbl"><thead><tr><th>Task</th><th>Category</th><th>Delay</th><th>Status</th><th>%</th></tr></thead><tbody id="delay-body"></tbody></table></div>
-      <div class="sec"><div class="sh"><span class="st">Slab programme</span></div><div id="slab-list"></div><div class="sh" style="margin-top:16px"><span class="st">RFI aging ★</span><span class="dtag d">Dummy</span></div><div class="cw sm"><canvas id="rfiChart"></canvas></div><div class="m3" style="margin-top:8px"><div class="mn"><div class="mv">23</div><div class="ml">Open RFIs</div></div><div class="mn"><div class="mv">8</div><div class="ml">Aging &gt;5d</div></div><div class="mn"><div class="mv">4.2d</div><div class="ml">Avg resolution</div></div></div></div>
-    </div>
     <!-- Upcoming Scheduled Activities -->
     <div class="sec" style="border-left-color:var(--navy);margin-top:0">
       <div class="win-bar">
@@ -183,6 +184,14 @@
         </div>
       </div>
       <div id="upcoming-activities"></div>
+    </div>
+    <div class="g22">
+      <div class="sec"><div class="sh"><span class="st">Milestone tracker</span></div><div id="milestone-list"></div></div>
+      <div class="sec"><div class="sh"><span class="st">Avg delay by category</span></div><div class="cw"><canvas id="delayChart"></canvas></div></div>
+    </div>
+    <div class="g22">
+      <div class="sec"><div class="sh"><span class="st">Top 15 most delayed tasks</span></div><table class="tbl"><thead><tr><th>Task</th><th>Category</th><th>Delay</th><th>Status</th><th>%</th></tr></thead><tbody id="delay-body"></tbody></table></div>
+      <div class="sec"><div class="sh"><span class="st">Slab programme</span></div><div id="slab-list"></div><div class="sh" style="margin-top:16px"><span class="st">RFI aging ★</span><span class="dtag d">Dummy</span></div><div class="cw sm"><canvas id="rfiChart"></canvas></div><div class="m3" style="margin-top:8px"><div class="mn"><div class="mv">23</div><div class="ml">Open RFIs</div></div><div class="mn"><div class="mv">8</div><div class="ml">Aging &gt;5d</div></div><div class="mn"><div class="mv">4.2d</div><div class="ml">Avg resolution</div></div></div></div>
     </div>
   </div>
 

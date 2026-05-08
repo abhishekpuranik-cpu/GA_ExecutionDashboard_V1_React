@@ -178,6 +178,111 @@ function showView(id,btn){
    PROJECT DROPDOWN
 ════════════════════════════════════════════════ */
 let currentProject = 'p1';
+let TREE = [
+  { id: 't1', project: 'Anantam Signature', phase: 'Phase I', building: 'E Building', projectId: 'p1', buildingKey: 'e' },
+  { id: 't2', project: 'Anantam Signature', phase: 'Phase I', building: 'D Building', projectId: 'p1', buildingKey: 'd' },
+  { id: 't3', project: 'GA Residences', phase: 'Phase I', building: 'Pimpri', projectId: 'p2', buildingKey: 'all' },
+  { id: 't4', project: 'GA Heights', phase: 'Phase I', building: 'Mumbai', projectId: 'p3', buildingKey: 'all' },
+  { id: 't5', project: 'GA Villas', phase: 'Phase I', building: 'Goa', projectId: 'p4', buildingKey: 'all' },
+];
+let treeSelection = { project: 'all', phase: 'all', building: 'all' };
+function treeId() { return `t${Math.random().toString(36).slice(2, 9)}`; }
+function uniqSorted(arr) { return [...new Set(arr.filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b))); }
+function treeNodes(project = 'all', phase = 'all', building = 'all') {
+  return TREE.filter(
+    (n) => (project === 'all' || n.project === project) && (phase === 'all' || n.phase === phase) && (building === 'all' || n.building === building)
+  );
+}
+function syncTreeSelectors() {
+  const pSel = document.getElementById('treeProjSel');
+  const phSel = document.getElementById('treePhaseSel');
+  const bSel = document.getElementById('treeBldSel');
+  if (!pSel || !phSel || !bSel) return;
+  const pVals = uniqSorted(TREE.map((n) => n.project));
+  if (!pVals.includes(treeSelection.project)) treeSelection.project = 'all';
+  pSel.innerHTML = ['<option value="all">All Projects</option>', ...pVals.map((v) => `<option value="${v}">${v}</option>`)].join('');
+  pSel.value = treeSelection.project;
+  const phVals = uniqSorted(treeNodes(treeSelection.project).map((n) => n.phase));
+  if (!phVals.includes(treeSelection.phase)) treeSelection.phase = 'all';
+  phSel.innerHTML = ['<option value="all">All Phases</option>', ...phVals.map((v) => `<option value="${v}">${v}</option>`)].join('');
+  phSel.value = treeSelection.phase;
+  const bVals = uniqSorted(treeNodes(treeSelection.project, treeSelection.phase).map((n) => n.building));
+  if (!bVals.includes(treeSelection.building)) treeSelection.building = 'all';
+  bSel.innerHTML = ['<option value="all">All Buildings</option>', ...bVals.map((v) => `<option value="${v}">${v}</option>`)].join('');
+  bSel.value = treeSelection.building;
+}
+function applyTreeSelectionToDashboard() {
+  const node = treeNodes(treeSelection.project, treeSelection.phase, treeSelection.building)[0];
+  if (!node) return;
+  const ps = document.getElementById('projSel');
+  const bs = document.getElementById('bldSel');
+  if (ps) ps.value = node.projectId;
+  if (bs) bs.value = node.buildingKey || 'all';
+  currentProject = node.projectId;
+  currentBuilding = node.buildingKey || 'all';
+  onProjChange(node.projectId);
+}
+function onTreeProjectChange(v) {
+  treeSelection.project = v || 'all';
+  treeSelection.phase = 'all';
+  treeSelection.building = 'all';
+  syncTreeSelectors();
+  applyTreeSelectionToDashboard();
+}
+function onTreePhaseChange(v) {
+  treeSelection.phase = v || 'all';
+  treeSelection.building = 'all';
+  syncTreeSelectors();
+  applyTreeSelectionToDashboard();
+}
+function onTreeBuildingChange(v) {
+  treeSelection.building = v || 'all';
+  syncTreeSelectors();
+  applyTreeSelectionToDashboard();
+}
+function addProjectTreeNode() {
+  const project = String(window.prompt('Project name', '') || '').trim();
+  if (!project) return;
+  const phase = String(window.prompt('Phase name', 'Phase I') || '').trim();
+  if (!phase) return;
+  const building = String(window.prompt('Building name', '') || '').trim();
+  if (!building) return;
+  const pid = `p_${Math.random().toString(36).slice(2, 7)}`;
+  PROJECTS[pid] = { ...PROJECTS.p1, name: project, sub: building, completion: 0, tasks: 0, done: 0, ip: 0, ns: 0, maxDelay: 0, spi: 1, cpi: 1 };
+  TREE.push({ id: treeId(), project, phase, building, projectId: pid, buildingKey: 'all' });
+  const projSel = document.getElementById('projSel');
+  if (projSel) {
+    const op = document.createElement('option');
+    op.value = pid;
+    op.textContent = `${project} — ${building}`;
+    projSel.appendChild(op);
+  }
+  treeSelection = { project, phase, building };
+  syncTreeSelectors();
+  applyTreeSelectionToDashboard();
+}
+function editProjectTreeNode() {
+  const node = treeNodes(treeSelection.project, treeSelection.phase, treeSelection.building)[0];
+  if (!node) return window.alert('Select one Project > Phase > Building first.');
+  const project = String(window.prompt('Project name', node.project) || '').trim();
+  const phase = String(window.prompt('Phase name', node.phase) || '').trim();
+  const building = String(window.prompt('Building name', node.building) || '').trim();
+  if (!project || !phase || !building) return;
+  node.project = project; node.phase = phase; node.building = building;
+  if (PROJECTS[node.projectId]) { PROJECTS[node.projectId].name = project; PROJECTS[node.projectId].sub = building; }
+  treeSelection = { project, phase, building };
+  syncTreeSelectors();
+  applyTreeSelectionToDashboard();
+}
+function deleteProjectTreeNode() {
+  const node = treeNodes(treeSelection.project, treeSelection.phase, treeSelection.building)[0];
+  if (!node) return window.alert('Select one Project > Phase > Building first.');
+  if (!window.confirm(`Delete "${node.project} > ${node.phase} > ${node.building}"?`)) return;
+  TREE = TREE.filter((x) => x.id !== node.id);
+  treeSelection = { project: 'all', phase: 'all', building: 'all' };
+  syncTreeSelectors();
+  applyTreeSelectionToDashboard();
+}
 function onProjChange(v){
   currentProject = v;
   const p=PROJECTS[v];
@@ -289,6 +394,11 @@ function renderPortfolio(){
 
 function drillProject(pid){
   document.getElementById('projSel').value=pid;
+  const node = TREE.find((n) => n.projectId === pid);
+  if (node) {
+    treeSelection = { project: node.project, phase: node.phase, building: node.building };
+    syncTreeSelectors();
+  }
   onProjChange(pid);
   showView('project',document.querySelector('.nav-view-btn:nth-child(3)'));
 }
@@ -297,15 +407,6 @@ function drillProject(pid){
    PROGRESS RENDER
 ════════════════════════════════════════════════ */
 function renderProgress(){
-  document.getElementById('wbs-list').innerHTML=L1.map(t=>`
-    <div class="wn">
-      <div style="width:8px;height:8px;border-radius:50%;background:${scC(t.s)};flex-shrink:0;margin-top:4px"></div>
-      <div style="flex:1;min-width:0"><div class="wn-name">${t.n}</div><div class="wn-cat">${t.cat}</div></div>
-      <div style="width:80px;flex-shrink:0"><div class="pt"><div class="pf" style="width:${t.p}%;background:${scC(t.s)}"></div></div></div>
-      <div style="width:34px;font-size:11px;font-weight:700;text-align:right;color:${scC(t.s)}">${t.p}%</div>
-      <div style="width:44px;font-size:10px;text-align:right;color:${t.d>0?C.red:'#d1d5db'}">${t.d>0?'+'+t.d+'d':''}</div>
-    </div>`).join('');
-
   dc('catChart');
   rc('catChart',new window.Chart(document.getElementById('catChart'),{
     type:'bar',
@@ -1488,6 +1589,12 @@ export function mountGADashboardV4() {
   window.showView = showView;
   window.onProjChange = onProjChange;
   window.onBuildingChange = onBuildingChange;
+  window.onTreeProjectChange = onTreeProjectChange;
+  window.onTreePhaseChange = onTreePhaseChange;
+  window.onTreeBuildingChange = onTreeBuildingChange;
+  window.addProjectTreeNode = addProjectTreeNode;
+  window.editProjectTreeNode = editProjectTreeNode;
+  window.deleteProjectTreeNode = deleteProjectTreeNode;
   window.exportCSV = exportCSV;
   window.downloadTemplate = downloadTemplate;
   window.downloadWorkTreeTemplate = downloadWorkTreeTemplate;
@@ -1557,6 +1664,8 @@ export function mountGADashboardV4() {
   window.addEventListener('resize', onWinResize);
 
   tryRestorePersistedImport();
+  syncTreeSelectors();
+  applyTreeSelectionToDashboard();
   initDashboardLibraryPanel();
   renderPortfolio();
   rendered.add('portfolio');
@@ -1580,6 +1689,12 @@ export function mountGADashboardV4() {
     delete window.showView;
     delete window.onProjChange;
     delete window.onBuildingChange;
+    delete window.onTreeProjectChange;
+    delete window.onTreePhaseChange;
+    delete window.onTreeBuildingChange;
+    delete window.addProjectTreeNode;
+    delete window.editProjectTreeNode;
+    delete window.deleteProjectTreeNode;
     delete window.exportCSV;
     delete window.downloadTemplate;
     delete window.downloadWorkTreeTemplate;

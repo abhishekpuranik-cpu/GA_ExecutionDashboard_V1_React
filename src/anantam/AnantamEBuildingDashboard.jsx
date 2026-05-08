@@ -75,6 +75,86 @@ function exportCsv(d) {
   URL.revokeObjectURL(a.href);
 }
 
+function fmtInr(n) {
+  const v = Number(n || 0);
+  return `INR ${v.toLocaleString('en-IN')}`;
+}
+
+function JourneyTimeline({ items }) {
+  return (
+    <div style={{ display: 'grid', gap: 8 }}>
+      {items.map((m, idx) => {
+        const done = m.stage === 'done';
+        const now = m.stage === 'now';
+        const color = done ? 'var(--green)' : now ? 'var(--amber)' : 'rgba(255,255,255,0.25)';
+        return (
+          <div key={`${m.label}-${idx}`} style={{ display: 'grid', gridTemplateColumns: '20px 1fr auto', gap: 8, alignItems: 'center' }}>
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: color, boxShadow: now ? '0 0 0 4px rgba(245,158,11,0.15)' : 'none' }} />
+            <div>
+              <div style={{ fontSize: 12, color: 'var(--text-s)', fontWeight: now ? 700 : 600 }}>{m.label}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-m)' }}>{m.date}</div>
+            </div>
+            <span className={`bdg ${done ? 'bgg' : now ? 'bga' : 'bgs'}`}>{done ? 'Past' : now ? 'Now' : 'Next'}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ReportInsightPanel() {
+  const { data } = useAnantam();
+  const r = data.REPORT_INSIGHTS;
+  if (!r) return null;
+  const overduePct = r.payableSummary.recorded > 0 ? Math.round((r.payableSummary.overdue / r.payableSummary.recorded) * 100) : 0;
+  const timeline = [
+    { label: 'Foundation and piling closed', date: 'Past', stage: 'done' },
+    { label: 'RCC + slab cycle (active workfront)', date: 'Current focus', stage: 'now' },
+    { label: 'MEP + finishing start gate', date: 'Next milestone', stage: 'next' },
+    { label: 'Handover readiness', date: 'Future target', stage: 'next' }
+  ];
+  return (
+    <div className="g22">
+      <div className="sec">
+        <div className="sh">
+          <span className="st">Construction journey (easy view)</span>
+          <span className="dtag">Now marker</span>
+        </div>
+        <p className="sec-sub">Where we are right now, what is done, and what is next.</p>
+        <JourneyTimeline items={timeline} />
+      </div>
+      <div className="sec">
+        <div className="sh">
+          <span className="st">Report-based action insights</span>
+          <span className="dtag">15 Apr - 29 Apr</span>
+        </div>
+        <div className="kg k3" style={{ marginBottom: 8 }}>
+          <div className="kc w">
+            <div className="kl">In-progress tasks</div>
+            <div className="kv">{r.taskSummary.inProgress}</div>
+            <div className="km">{r.taskSummary.inProgressDelayed} delayed</div>
+          </div>
+          <div className="kc b">
+            <div className="kl">Overdue payable</div>
+            <div className="kv">{fmtInr(r.payableSummary.overdue)}</div>
+            <div className="km">{overduePct}% of recorded payables</div>
+          </div>
+          <div className="kc b">
+            <div className="kl">Procurement at risk</div>
+            <div className="kv">{r.procurementRisk.deliveredQty}/{r.procurementRisk.orderedQty}</div>
+            <div className="km">{r.procurementRisk.material} · {r.procurementRisk.poId}</div>
+          </div>
+        </div>
+        <ul style={{ margin: 0, paddingLeft: 18, color: 'var(--text-s)', fontSize: 11, lineHeight: 1.6 }}>
+          {r.keySignals.map((s) => (
+            <li key={s}>{s}</li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 function CatStatusChart() {
   const { data } = useAnantam();
   const ref = useRef(null);
@@ -817,6 +897,8 @@ export default function AnantamEBuildingDashboard() {
                 <span className="bdg bgr">✕ Tiling 0/121</span>
               </div>
             </div>
+
+            <ReportInsightPanel />
 
             <div className="g22">
               <div className="sec">

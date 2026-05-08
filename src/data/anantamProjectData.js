@@ -123,6 +123,26 @@ export const CATEGORY_FILTER = [
   { value: 'General', label: 'General' }
 ];
 
+/** Extracted from Powerplay daily report (15 Apr 2026 - 29 Apr 2026) for simple decision-focused insights. */
+export const REPORT_INSIGHTS = {
+  periodLabel: '15 Apr 2026 - 29 Apr 2026',
+  taskSummary: { completed: 0, inProgress: 2, inProgressDelayed: 1, notStarted: 0 },
+  payableSummary: { recorded: 259770, paid: 144000, due: 115770, overdue: 115770 },
+  procurementRisk: {
+    poId: 'PO-E-03-004110',
+    material: 'RMC M30',
+    orderedQty: 90,
+    deliveredQty: 0,
+    expectedOn: '29 Apr 2026'
+  },
+  keySignals: [
+    '2nd slab shuttering delayed by 4 days; now 85% complete',
+    'Drawing and RCC updates continue, but no completed milestones in this period',
+    'Labour attendance logged, but payable capture is incomplete across days',
+    'PO due today with zero GRN can block slab continuity if not closed'
+  ]
+};
+
 /** Single snapshot for MongoDB / context (same fields as named exports above). */
 export const ANANTAM_DEFAULTS = {
   AS_OF,
@@ -134,5 +154,6 @@ export const ANANTAM_DEFAULTS = {
   SLABS,
   MILESTONES,
   COST_ITEMS,
-  CATEGORY_FILTER
+  CATEGORY_FILTER,
+  REPORT_INSIGHTS
 };
