@@ -442,10 +442,9 @@ function renderProgress(){
 
 /* ═══════════════════════════════════════════════
    UPCOMING ACTIVITIES DATA
-   Reference date: 09 Apr 2026 = new Date(2026,3,9)
-   Month index is 0-based: Jan=0, Apr=3, May=4
+   Reference date: today (runtime)
 ════════════════════════════════════════════════ */
-const TODAY = new Date(2026,3,9);
+const TODAY = new Date();
 const UPCOMING_DEFAULT = [
   /* ── CIVIL ── */
   {id:'TSK000044',n:'1st slab shuttering',cat:'Civil',ps:new Date(2026,3,1),pe:new Date(2026,3,16),prog:59.9,s:'In Progress',delay:9,mem:'Namdev S'},
@@ -1096,6 +1095,7 @@ function renderUpcomingActivities(days){
         </div>
       </div>`;
     }).join('');
+    const treeRows = renderActivityTree(tl);
 
     const isOpenByDefault = ipC > 0;
     const uid = 'cat-'+cat.replace(/[^a-z]/gi,'').toLowerCase();
@@ -1115,6 +1115,12 @@ function renderUpcomingActivities(days){
         </div>
       </div>
       <div class="cat-body ${isOpenByDefault?'open':''}" id="${uid}">
+        <div style="padding:6px 8px;border-bottom:1px solid var(--b1);background:#fafbfd">
+          <details>
+            <summary style="cursor:pointer;font-size:11px;color:var(--t3);font-weight:600">Tree view (collapsible)</summary>
+            <div style="margin-top:6px">${treeRows}</div>
+          </details>
+        </div>
         <div class="act-hdr">
           <div></div><div>Task</div><div>Dates</div><div>Dur</div><div>Progress</div><div>Delay</div><div>Assigned</div><div>Status</div>
         </div>
@@ -1122,6 +1128,35 @@ function renderUpcomingActivities(days){
       </div>
     </div>`;
   }).join('');
+}
+function renderActivityTree(tasks){
+  const root={children:{}};
+  (tasks||[]).forEach((t)=>{
+    const path=String(t.n||'').split(/\s*[›>]\s*/).map((x)=>String(x||'').trim()).filter(Boolean);
+    if(!path.length) return;
+    let node=root;
+    path.forEach((part,idx)=>{
+      if(!node.children[part]) node.children[part]={name:part,children:{},leaf:null};
+      node=node.children[part];
+      if(idx===path.length-1) node.leaf=t;
+    });
+  });
+  function nodeHtml(map){
+    const keys=Object.keys(map||{});
+    if(!keys.length) return '<div style="font-size:11px;color:var(--t4)">No tree data</div>';
+    return '<ul style="margin:0;padding-left:16px;list-style:disc">'+keys.map((k)=>{
+      const n=map[k];
+      const hasKids=Object.keys(n.children||{}).length>0;
+      const leaf=n.leaf;
+      if(hasKids){
+        return `<li style="margin:2px 0"><details><summary style="cursor:pointer;font-size:11px;color:var(--t2)">${n.name}</summary>${nodeHtml(n.children)}</details></li>`;
+      }
+      const delay=(leaf&&leaf.delay>0)?` <span style="color:${leaf.delay>30?C.red:C.amber};font-weight:700">(+${leaf.delay}d)</span>`:'';
+      const stat=leaf?` <span style="color:var(--t4)">[${leaf.s}]</span>`:'';
+      return `<li style="margin:2px 0;font-size:11px;color:var(--t2)">${n.name}${delay}${stat}</li>`;
+    }).join('')+'</ul>';
+  }
+  return nodeHtml(root.children);
 }
 
 function toggleCat(uid){
