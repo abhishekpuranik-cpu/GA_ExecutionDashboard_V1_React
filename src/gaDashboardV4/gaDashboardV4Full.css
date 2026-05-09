@@ -233,3 +233,26 @@ html,body{font-family:'DM Sans',system-ui,sans-serif;background:var(--canvas);co
   .wrap{padding:12px 14px 40px}
   .field-row{grid-template-columns:1fr 1fr;font-size:10px}
 }
+
+/* ── Roadmap ── */
+.ga-roadmap-leg{display:flex;flex-wrap:wrap;gap:10px 16px;margin-bottom:12px;font-size:11px;color:var(--t3)}
+.ga-roadmap-leg span{display:inline-flex;align-items:center;gap:6px}
+.ga-roadmap-leg i{display:inline-block;width:12px;height:8px;border-radius:3px;background:var(--b2)}
+.ga-roadmap-leg i.pl{background:rgba(148,163,184,.85)}
+.ga-roadmap-leg i.ev{background:rgba(29,78,216,.82)}
+.ga-roadmap-leg i.ac{background:rgba(21,128,61,.82)}
+.ga-roadmap-leg i.td{background:rgba(185,28,28,.82)}
+.ga-roadmap-visual{border:1px solid var(--b1);border-radius:var(--rl);background:var(--s2);padding:12px 14px;margin-bottom:4px}
+.ga-rm-axis{display:flex;justify-content:space-between;font-size:10px;color:var(--t4);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.ga-rm-row{display:grid;grid-template-columns:minmax(140px,.9fr) 1fr;gap:12px;align-items:center;margin-bottom:10px}
+.ga-rm-label{font-size:12px;color:var(--t1);min-width:0}
+.ga-rm-label small{display:block;font-size:10px;color:var(--t4);margin-top:2px;font-weight:500}
+.ga-rm-track-wrap{position:relative;height:38px;display:flex;align-items:center}
+.ga-rm-track{position:relative;flex:1;height:22px;background:linear-gradient(90deg,var(--surface),var(--b1));border-radius:8px;overflow:hidden;border:1px solid var(--b1)}
+.ga-rm-planned{position:absolute;top:50%;transform:translateY(-50%);height:8px;border-radius:99px;background:rgba(148,163,184,.7);opacity:.95}
+.ga-rm-expected-marker{position:absolute;top:50%;transform:translate(-50%,-50%);width:3px;height:70%;border-radius:2px;background:var(--navy);opacity:.92}
+.ga-rm-actual-marker{position:absolute;top:50%;transform:translate(-50%,-50%);width:10px;height:10px;border-radius:50%;background:var(--G);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.ga-rm-actual-marker.slate{background:var(--t4)}
+.ga-rm-actual-marker.risk{background:var(--R)}
+.ga-roadmap-tbl input[type='date']{font-size:11px;padding:5px 6px;border:1px solid var(--b1);border-radius:6px;font-family:inherit;min-width:120px;color:var(--t2)}
+.ga-roadmap-tbl input[type='date']:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 2px rgba(29,78,216,.15)}

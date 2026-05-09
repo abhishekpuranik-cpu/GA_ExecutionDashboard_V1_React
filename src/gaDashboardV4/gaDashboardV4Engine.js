@@ -22,7 +22,7 @@ const C={
   gray:'#9ca3af',grid:'rgba(0,0,0,.07)',tick:'#9ca3af',
   f:'DM Sans,system-ui,sans-serif'
 };
-const GA_DASHBOARD_VERSION = '20260508-kpi';
+const GA_DASHBOARD_VERSION = '20260509-roadmap-tree-v2';
 const tt={backgroundColor:'#fff',titleColor:'#111827',bodyColor:'#374151',borderColor:'#e4e2dc',borderWidth:1,padding:10,titleFont:{weight:'600',family:C.f},bodyFont:{family:C.f}};
 const gO=(ex={})=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:tt},scales:{x:{grid:{color:C.grid},ticks:{color:C.tick,font:{size:11,family:C.f}},...(ex.sx||{})},y:{grid:{color:C.grid},ticks:{color:C.tick,font:{size:11,family:C.f}},...(ex.sy||{})}},...ex});
 const R={};
@@ -181,6 +181,7 @@ function updateRuntimeMeta(){
    VIEW SWITCHING
 ════════════════════════════════════════════════ */
 const rendered=new Set();
+const activityTreeExpanded = new Set();
 function showView(id,btn){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.nav-view-btn').forEach(b=>b.classList.remove('active'));
@@ -329,7 +330,15 @@ function onProjChange(v){
 /* ═══════════════════════════════════════════════
    TAB SWITCHING (project)
 ════════════════════════════════════════════════ */
-const PROJ_RENDER={progress:renderProgress,schedule:renderSchedule,ops:renderOps,performance:renderPerformance,finance:renderFinance,gaps:null};
+const PROJ_RENDER={
+  progress: renderProgress,
+  schedule: renderSchedule,
+  roadmap: renderRoadmap,
+  ops: renderOps,
+  performance: renderPerformance,
+  finance: renderFinance,
+  gaps: null,
+};
 
 /* ═══════════════════════════════════════════════
    KPI PANELS (DYNAMIC)
@@ -594,6 +603,10 @@ let SCHEDULE_SLABS = SCHEDULE_SLABS_DEFAULT.map((s) => ({ ...s }));
 let currentBuilding = 'e';
 const buildingTaskStore = { d: null, e: null };
 
+/** Per scope (building or project id): milestoneKey → { expectedEnd?: 'YYYY-MM-DD', metDate?: 'YYYY-MM-DD' } — persisted in Mongo with ga_v4_import payload */
+let roadmapOverridesByScope = {};
+let roadmapMongoUpdatedAt = null;
+
 function detectBuildingKey(text) {
   const s = String(text || '').toLowerCase();
   if (/\bd[\s_-]*building\b/.test(s) || /\banantam signature[\s_-]*d\b/.test(s)) return 'd';
@@ -619,6 +632,8 @@ function resetDashboardToDefaults() {
   buildingTaskStore.d = null;
   buildingTaskStore.e = null;
   currentBuilding = 'e';
+  roadmapOverridesByScope = {};
+  roadmapMongoUpdatedAt = null;
   const bs = document.getElementById('bldSel');
   if (bs) bs.value = 'e';
 }
@@ -671,6 +686,7 @@ function applyImportedNormalizedTasks(tasks, today = TODAY, buildingKey = null) 
   }
   persistImportPayload({
     ...prev,
+    roadmap: roadmapBlockForPersist(prev),
     tasks: serializeTasksForStorage(tasks),
     tasksByBuilding,
     activeBuilding: currentBuilding,
@@ -742,6 +758,7 @@ function applyPdfInsight(insight, doPersist = true) {
     const prev = loadPersistedImportPayload() || {};
     persistImportPayload({
       ...prev,
+      roadmap: roadmapBlockForPersist(prev),
       insight,
       savedAt: new Date().toISOString(),
     });
@@ -751,6 +768,7 @@ function applyPdfInsight(insight, doPersist = true) {
 function tryRestorePersistedImport() {
   const payload = loadPersistedImportPayload();
   if (!payload) return;
+  mergeRoadmapFromPayload(payload);
   if (payload.tasksByBuilding) {
     if (payload.tasksByBuilding.d) buildingTaskStore.d = payload.tasksByBuilding.d;
     if (payload.tasksByBuilding.e) buildingTaskStore.e = payload.tasksByBuilding.e;
@@ -778,6 +796,7 @@ function rerunAfterTaskImport() {
   if (document.getElementById('proj-cards')) renderPortfolio();
   if (document.getElementById('wbs-list')) renderProgress();
   if (document.getElementById('milestone-list')) renderSchedule();
+  if (document.getElementById('roadmap-body')) renderRoadmap();
   if (document.getElementById('trendChart')) renderOps();
   if (document.getElementById('perf-kpi-cards')) renderPerformance();
   if (document.getElementById('boqChart')) renderFinance();
@@ -893,6 +912,160 @@ function escapeHtmlGa(s) {
   return d.innerHTML;
 }
 
+function roadmapScopeKey() {
+  return currentProject === 'p1' ? currentBuilding || 'e' : currentProject || 'all';
+}
+
+function mergeRoadmapFromPayload(payload) {
+  if (!payload?.roadmap?.byScope || typeof payload.roadmap.byScope !== 'object') return;
+  try {
+    roadmapOverridesByScope = JSON.parse(JSON.stringify(payload.roadmap.byScope));
+  } catch {
+    roadmapOverridesByScope = { ...payload.roadmap.byScope };
+  }
+  roadmapMongoUpdatedAt = payload.roadmap.updatedAt || null;
+}
+
+function roadmapBlockForPersist(prevPayload) {
+  return {
+    version: 1,
+    byScope: JSON.parse(JSON.stringify(roadmapOverridesByScope)),
+    updatedAt: roadmapMongoUpdatedAt || prevPayload?.roadmap?.updatedAt || null,
+  };
+}
+
+function persistRoadmapNow() {
+  const prev = loadPersistedImportPayload() || {};
+  roadmapMongoUpdatedAt = new Date().toISOString();
+  persistImportPayload({ ...prev, roadmap: { ...roadmapBlockForPersist(prev), updatedAt: roadmapMongoUpdatedAt } });
+  updateRoadmapMongoHint();
+  if (document.getElementById('roadmap-body')) renderRoadmap();
+}
+
+function updateRoadmapMongoHint() {
+  const el = document.getElementById('roadmap-mongo-hint');
+  if (!el) return;
+  if (roadmapMongoUpdatedAt) {
+    el.innerHTML = `<strong>Roadmap dates</strong> were last persisted to MongoDB at <strong>${escapeHtmlGa(new Date(roadmapMongoUpdatedAt).toLocaleString())}</strong> (included in GA v4 import payload). Use Data Upload → <em>Save dashboard</em> for additional named snapshots.`;
+  } else {
+    el.textContent =
+      'Edit dates below to save — each change writes to MongoDB when the API is available (same document as GA v4 import). Refresh from another browser after save.';
+  }
+}
+
+function isoFromDate(d) {
+  if (!(d instanceof Date) || Number.isNaN(d.getTime())) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const da = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${da}`;
+}
+
+function parseLocalYMD(iso) {
+  if (!iso || typeof iso !== 'string') return null;
+  const m = iso.trim().slice(0, 10).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+}
+
+function roadmapMilestoneKey(level, l1, l2) {
+  const s = (x) =>
+    String(x ?? '')
+      .trim()
+      .replace(/\|/g, '·')
+      .slice(0, 160);
+  return level === 'L1' ? `L1|${s(l1)}` : `L2|${s(l1)}|${s(l2)}`;
+}
+
+function tasksForRoadmap() {
+  const sk = roadmapScopeKey();
+  let serialized = buildingTaskStore[sk];
+  if ((!serialized || !serialized.length) && sk !== 'all' && buildingTaskStore.e?.length) serialized = buildingTaskStore.e;
+  let arr = serialized?.length ? deserializeTasksFromStorage(serialized) : [];
+  if (!arr.length) {
+    const p = loadPersistedImportPayload();
+    if (p?.tasks?.length) arr = deserializeTasksFromStorage(p.tasks);
+  }
+  if (!arr.length)
+    arr = UPCOMING.map((u) => ({
+      id: u.id,
+      levels: String(u.n)
+        .split(/\s*[›>]\s*/)
+        .map((x) => String(x || '').trim())
+        .filter(Boolean),
+      ps: u.ps instanceof Date ? u.ps : new Date(u.ps),
+      pe: u.pe instanceof Date ? u.pe : new Date(u.pe),
+      prog: Number(u.prog) || 0,
+      status: u.s === 'Completed' ? 'Completed' : u.s === 'In Progress' ? 'In Progress' : 'Not Started',
+    }));
+  return arr;
+}
+
+function aggregateTaskBucket(bucketTasks, todayRef) {
+  const list = bucketTasks.filter(Boolean);
+  if (!list.length) return null;
+  const pes = list.map((t) => t.pe).filter((d) => d instanceof Date && !Number.isNaN(d.getTime()));
+  const pss = list.map((t) => t.ps).filter((d) => d instanceof Date && !Number.isNaN(d.getTime()));
+  const maxPe = pes.length ? new Date(Math.max(...pes.map((d) => d.getTime()))) : null;
+  const minPs = pss.length ? new Date(Math.min(...pss.map((d) => d.getTime()))) : null;
+  const avgProg =
+    list.reduce((s, t) => s + Math.max(0, Math.min(100, Number(t.prog) || 0)), 0) /
+    Math.max(1, list.length);
+  const allDone =
+    list.length > 0 && list.every((t) => t.status === 'Completed' || (Number(t.prog) || 0) >= 99.5);
+  return { maxPe, minPs, avgProg: Math.round(avgProg * 10) / 10, allDone, taskCount: list.length };
+}
+
+function varianceLabel(expectedISO, metISO, allDone, todayRef = new Date()) {
+  const e = parseLocalYMD(expectedISO);
+  if (!e) return { text: '—', tone: '', days: null };
+  const strip = new Date(todayRef.getFullYear(), todayRef.getMonth(), todayRef.getDate());
+  const es = new Date(e.getFullYear(), e.getMonth(), e.getDate());
+  if (metISO) {
+    const a = parseLocalYMD(metISO);
+    if (!a) return { text: '—', tone: '', days: null };
+    const d = Math.round((a - es) / 86400000);
+    const text = `${d <= 0 ? '' : '+'}${d}d`;
+    return { text, tone: d <= 0 ? 'ok' : 'risk', days: d };
+  }
+  if (allDone) {
+    const d = Math.round((strip - es) / 86400000);
+    return { text: d <= 0 ? 'Completed on time' : `+${d}d late vs plan`, tone: d <= 0 ? 'ok' : 'risk', days: d };
+  }
+  const d = Math.round((strip - es) / 86400000);
+  if (d <= 0) return { text: 'On schedule', tone: 'ok', days: 0 };
+  return { text: `+${d}d vs expected`, tone: 'risk', days: d };
+}
+
+function buildRoadmapBuckets(tasks) {
+  const buckets = new Map();
+  const addTasks = (id, meta, row) => {
+    if (!buckets.has(id)) buckets.set(id, { id, tasks: [], ...meta });
+    buckets.get(id).tasks.push(row);
+  };
+  tasks.forEach((t) => {
+    let lv = Array.isArray(t.levels) ? t.levels.filter((x) => String(x ?? '').trim()) : [];
+    if (!lv.length && t.name)
+      lv = String(t.name)
+        .split(/\s*[›>]\s*/)
+        .map((x) => String(x || '').trim())
+        .filter(Boolean);
+    if (!lv.length) return;
+    if (lv[0])
+      addTasks(roadmapMilestoneKey('L1', lv[0], ''), { level: 'L1', l1: lv[0], l2: '', title: lv[0] }, t);
+    if (lv[1]) addTasks(roadmapMilestoneKey('L2', lv[0], lv[1]), { level: 'L2', l1: lv[0], l2: lv[1], title: lv[1] }, t);
+  });
+  return [...buckets.values()];
+}
+
+function setRoadmapField(milestoneKey, field, value) {
+  const sk = roadmapScopeKey();
+  if (!roadmapOverridesByScope[sk]) roadmapOverridesByScope[sk] = {};
+  if (!roadmapOverridesByScope[sk][milestoneKey]) roadmapOverridesByScope[sk][milestoneKey] = {};
+  roadmapOverridesByScope[sk][milestoneKey][field] = value ? String(value).slice(0, 12) : '';
+  persistRoadmapNow();
+}
+
 function captureCurrentImportPayloadForSave() {
   const prev = loadPersistedImportPayload() || {};
   return {
@@ -904,6 +1077,7 @@ function captureCurrentImportPayloadForSave() {
     },
     activeBuilding: currentBuilding,
     materials: MATERIALS.map((m) => ({ ...m })),
+    roadmap: roadmapBlockForPersist(prev),
     savedAt: new Date().toISOString(),
   };
 }
@@ -1190,19 +1364,31 @@ function renderUpcomingActivities(days){
   }).join('');
 }
 function renderActivityTreeRows(tasks){
-  const root={name:'root',children:{},tasks:[]};
-  (tasks||[]).forEach((t)=>{
-    const path=String(t.n||'').split(/\s*[›>]\s*/).map((x)=>String(x||'').trim()).filter(Boolean);
-    if(!path.length) return;
-    let node=root;
-    path.forEach((part)=>{
-      if(!node.children[part]) node.children[part]={name:part,children:{},tasks:[]};
-      node=node.children[part];
-      node.tasks.push(t);
-    });
+  const l1Map = new Map();
+  const splitPath = (t) => {
+    const byLevels = Array.isArray(t?.levels) ? t.levels.map((x) => String(x || '').trim()).filter(Boolean) : [];
+    if (byLevels.length) return byLevels.slice(0, 3);
+    const byName = String(t?.n || '')
+      .split(/\s*[›>]\s*/)
+      .map((x) => String(x || '').trim())
+      .filter(Boolean);
+    if (byName.length >= 3) return byName.slice(0, 3);
+    if (byName.length === 2) return [byName[0], byName[1], byName[1]];
+    if (byName.length === 1) return [String(t?.cat || 'General'), byName[0], byName[0]];
+    return [String(t?.cat || 'General'), 'Uncategorized', String(t?.n || 'Task')];
+  };
+  (tasks || []).forEach((t) => {
+    const [l1, l2, l3] = splitPath(t);
+    if (!l1Map.has(l1)) l1Map.set(l1, { name: l1, l2Map: new Map(), tasks: [] });
+    const l1Node = l1Map.get(l1);
+    l1Node.tasks.push(t);
+    if (!l1Node.l2Map.has(l2)) l1Node.l2Map.set(l2, { name: l2, l3List: [], tasks: [] });
+    const l2Node = l1Node.l2Map.get(l2);
+    l2Node.tasks.push(t);
+    l2Node.l3List.push({ name: l3, task: t });
   });
-  function summarize(node){
-    const arr=node.tasks||[];
+
+  function summarize(arr){
     if(!arr.length) return null;
     let minPs=null,maxPe=null,sumProg=0,maxDelay=0;
     const memSet={}; const stat={done:0,ip:0,ns:0};
@@ -1225,17 +1411,24 @@ function renderActivityTreeRows(tasks){
   function statusBadge(s){
     return `<span class="bdg ${s==='Completed'?'bgg':s==='In Progress'?'bga':'bgs'}" style="font-size:9px">${s==='Not Started'?'Starting':s}</span>`;
   }
-  function rowHtml(name, lvl, m, isParent){
+  function nodeId(path) {
+    return `act-${encodeURIComponent(path.join('|')).replace(/%/g, '_')}`;
+  }
+  function rowHtml(name, lvl, m, marker, options = {}){
     const indent=lvl*14;
-    const marker=isParent?'▸':'•';
     const p=Math.max(0,Math.min(100,Number(m.avgProg||0)));
     const pCol=pc(p);
     const delay=m.maxDelay>0?`<span style="color:${m.maxDelay>30?C.red:C.amber};font-weight:700">+${m.maxDelay}d</span>`:`<span style="color:var(--t4)">—</span>`;
     const members=m.members.length?`${m.members.slice(0,2).join(', ')}${m.members.length>2?'…':''}`:'—';
+    const weight = options.bold ? 700 : 500;
+    const clickAttr = options.toggleId ? `onclick="toggleActivityNode('${options.toggleId}')"` : '';
+    const cursor = options.toggleId ? 'cursor:pointer;' : '';
+    const markerColor = options.toggleId ? 'var(--t3)' : 'var(--t4)';
+    const hiddenStyle = options.hidden ? 'display:none;' : '';
     return `<div class="act-row">
-      <div><div class="act-swatch" style="background:${isParent?'#6b7280':scC2(m.status)}"></div></div>
-      <div class="act-name" title="${name}" style="padding-left:${indent}px;font-weight:${isParent?700:500}">
-        <span style="display:inline-block;width:10px;color:var(--t4);margin-right:4px">${marker}</span>${name}${isParent?` <span style="color:var(--t4);font-size:10px">(${m.count})</span>`:''}
+      <div><div class="act-swatch" style="background:${options.bold ? '#6b7280' : scC2(m.status)}"></div></div>
+      <div class="act-name" title="${escapeHtmlGa(name)}" style="padding-left:${indent}px;font-weight:${weight};${cursor}${hiddenStyle}" ${clickAttr}>
+        <span style="display:inline-block;width:10px;color:${markerColor};margin-right:4px">${marker}</span>${escapeHtmlGa(name)}${options.count != null ? ` <span style="color:var(--t4);font-size:10px">(${options.count})</span>` : ''}
       </div>
       <div class="act-dates">${m.minPs&&m.maxPe?`${fmtD(m.minPs)} → ${fmtD(m.maxPe)}`:'—'}</div>
       <div class="act-dur">${m.dur?`${m.dur}d`:'—'}</div>
@@ -1248,19 +1441,44 @@ function renderActivityTreeRows(tasks){
       <div class="act-stat">${statusBadge(m.status)}</div>
     </div>`;
   }
-  function walk(node,lvl){
-    const keys=Object.keys(node.children||{}).sort((a,b)=>a.localeCompare(b));
-    let out='';
-    keys.forEach((k)=>{
-      const c=node.children[k];
-      const m=summarize(c); if(!m) return;
-      const hasKids=Object.keys(c.children||{}).length>0;
-      out+=rowHtml(c.name,lvl,m,hasKids);
-      out+=walk(c,lvl+1);
+  let out = '';
+  [...l1Map.keys()]
+    .sort((a, b) => a.localeCompare(b))
+    .forEach((l1) => {
+      const l1Node = l1Map.get(l1);
+      const l1Sum = summarize(l1Node.tasks);
+      if (!l1Sum) return;
+      const l1Id = nodeId([l1]);
+      const l2Entries = [...l1Node.l2Map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+      if (!activityTreeExpanded.has(l1Id) && l2Entries.some(([, n]) => n.tasks.some((t) => t.s === 'In Progress'))) {
+        activityTreeExpanded.add(l1Id);
+      }
+      const l1Marker = activityTreeExpanded.has(l1Id) ? '▾' : '▸';
+      out += rowHtml(l1Node.name, 0, l1Sum, l1Marker, { bold: true, toggleId: l1Id, count: l1Node.tasks.length });
+      l2Entries.forEach(([l2, l2Node]) => {
+        const l2Sum = summarize(l2Node.tasks);
+        if (!l2Sum) return;
+        const l2Id = nodeId([l1, l2]);
+        if (!activityTreeExpanded.has(l2Id) && l2Node.tasks.some((t) => t.s === 'In Progress')) activityTreeExpanded.add(l2Id);
+        const l2Open = activityTreeExpanded.has(l2Id);
+        out += rowHtml(l2Node.name, 1, l2Sum, l2Open ? '▾' : '▸', {
+          bold: true,
+          toggleId: l2Id,
+          hidden: !activityTreeExpanded.has(l1Id),
+          count: l2Node.tasks.length,
+        });
+        l2Node.l3List
+          .sort((a, b) => String(a.name).localeCompare(String(b.name)))
+          .forEach((leaf) => {
+            const m = summarize([leaf.task]);
+            if (!m) return;
+            out += rowHtml(leaf.name, 2, m, '•', {
+              hidden: !activityTreeExpanded.has(l1Id) || !activityTreeExpanded.has(l2Id),
+            });
+          });
+      });
     });
-    return out;
-  }
-  return walk(root,0) || '<div class="no-tasks">No tree data for this window.</div>';
+  return out || '<div class="no-tasks">No tree data for this window.</div>';
 }
 
 function toggleCat(uid){
@@ -1269,6 +1487,13 @@ function toggleCat(uid){
   const arrow=hdr.querySelector('.cat-arrow');
   const open=body.classList.toggle('open');
   arrow.classList.toggle('open',open);
+}
+
+function toggleActivityNode(nodeId){
+  if (!nodeId) return;
+  if (activityTreeExpanded.has(nodeId)) activityTreeExpanded.delete(nodeId);
+  else activityTreeExpanded.add(nodeId);
+  rerunAfterTaskImport();
 }
 
 function renderSchedule(){
@@ -1303,6 +1528,155 @@ function renderSchedule(){
   // Upcoming activities - init with 7 days
   renderUpcomingActivities(7);
 
+}
+
+function renderRoadmap() {
+  updateRoadmapMongoHint();
+  const leg = document.getElementById('roadmap-legend');
+  const vis = document.getElementById('roadmap-visual');
+  const tbody = document.getElementById('roadmap-body');
+  if (!leg || !vis || !tbody) return;
+  leg.innerHTML =
+    '<span><i class="pl"></i> Planned window (tasks)</span><span><i class="ev"></i> Expected deadline</span><span><i class="ac"></i> Met date</span><span><i class="td"></i> Behind expected</span>';
+  const tasks = tasksForRoadmap();
+  const buckets = buildRoadmapBuckets(tasks);
+  if (!buckets.length) {
+    vis.innerHTML =
+      '<div class="no-tasks">No WBS milestones found. Import tasks (Level 1–2+) or use the demo schedule.</div>';
+    tbody.innerHTML =
+      '<tr><td colspan="8" style="text-align:center;color:var(--t4);padding:24px;font-size:12px">No data yet.</td></tr>';
+    return;
+  }
+  const sk = roadmapScopeKey();
+  const enriched = buckets
+    .map((b) => {
+      const agg = aggregateTaskBucket(b.tasks);
+      if (!agg) return null;
+      const plannedIso = isoFromDate(agg.maxPe);
+      const ov = (roadmapOverridesByScope[sk] && roadmapOverridesByScope[sk][b.id]) || {};
+      let expectedISO = plannedIso;
+      if (ov.expectedEnd && parseLocalYMD(ov.expectedEnd)) expectedISO = ov.expectedEnd.trim().slice(0, 10);
+      if (Object.prototype.hasOwnProperty.call(ov, 'expectedEnd') && ov.expectedEnd === '') expectedISO = '';
+      const metISO = ov.metDate && parseLocalYMD(ov.metDate) ? ov.metDate.trim().slice(0, 10) : '';
+      const vr = varianceLabel(expectedISO || plannedIso || '', metISO, agg.allDone, TODAY);
+      const state = agg.allDone ? (metISO || plannedIso ? 'Met' : 'Completed') : agg.avgProg > 0 ? 'In flight' : 'Outstanding';
+      return {
+        id: b.id,
+        level: b.level,
+        l1: b.l1,
+        l2: b.l2,
+        title: b.title,
+        taskCount: b.tasks.length,
+        agg,
+        plannedIso,
+        expectedISO: expectedISO || plannedIso || '',
+        metISO,
+        variance: vr,
+        rollupPct: agg.avgProg,
+        state,
+        plannedStart: agg.minPs || null,
+      };
+    })
+    .filter(Boolean);
+  enriched.sort((a, b) => {
+    if (a.level !== b.level) return a.level === 'L1' ? -1 : 1;
+    const ta = (
+      a.plannedStart ||
+      parseLocalYMD(a.plannedIso) ||
+      parseLocalYMD(a.expectedISO) ||
+      TODAY
+    ).getTime();
+    const tb = (
+      b.plannedStart ||
+      parseLocalYMD(b.plannedIso) ||
+      parseLocalYMD(b.expectedISO) ||
+      TODAY
+    ).getTime();
+    return ta - tb || String(a.title).localeCompare(String(b.title));
+  });
+  let chartMin = TODAY.getTime();
+  let chartMax = TODAY.getTime() + 86400000 * 45;
+  enriched.forEach((r) => {
+    if (r.plannedStart) chartMin = Math.min(chartMin, r.plannedStart.getTime());
+    if (r.expectedISO) {
+      const ed = parseLocalYMD(r.expectedISO);
+      if (ed) {
+        chartMin = Math.min(chartMin, ed.getTime());
+        chartMax = Math.max(chartMax, ed.getTime());
+      }
+    }
+    if (r.metISO) {
+      const md = parseLocalYMD(r.metISO);
+      if (md) {
+        chartMin = Math.min(chartMin, md.getTime());
+        chartMax = Math.max(chartMax, md.getTime());
+      }
+    }
+    if (r.agg?.maxPe) chartMax = Math.max(chartMax, r.agg.maxPe.getTime());
+    if (r.agg?.minPs) chartMin = Math.min(chartMin, r.agg.minPs.getTime());
+  });
+  chartMin -= 86400000 * 10;
+  chartMax += 86400000 * 24;
+  const span = Math.max(86400000 * 21, chartMax - chartMin);
+  const axisStart = new Date(chartMin);
+  const axisEnd = new Date(chartMax);
+  const mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fmtAxis = (dt) => `${pad2(dt.getDate())} ${mn[dt.getMonth()]} '${String(dt.getFullYear()).slice(2)}`;
+  const posLeft = (d) =>
+    `${Math.max(0, Math.min(100, ((Math.max(chartMin, d.getTime()) - chartMin) / span) * 100))}%`;
+  const milestoneAttr = (id) => encodeURIComponent(String(id)).replace(/'/g, '%27');
+
+  vis.innerHTML = `<div class="ga-rm-axis"><span>${escapeHtmlGa(fmtAxis(axisStart))}</span><span>Today · ${escapeHtmlGa(runtimeDateLabel(TODAY))}</span><span>${escapeHtmlGa(fmtAxis(axisEnd))}</span></div>${enriched.map((r) => {
+      const plannedBar =
+        r.plannedStart &&
+        r.agg?.maxPe &&
+        ((r.agg.maxPe.getTime() - r.plannedStart.getTime()) / span) * 100 > 0
+          ? (() => {
+              const lo = ((r.plannedStart.getTime() - chartMin) / span) * 100;
+              const hi = ((r.agg.maxPe.getTime() - chartMin) / span) * 100;
+              const ww = Math.max(0.4, hi - lo);
+              return `<span class="ga-rm-planned" style="left:${lo}%;width:${ww}%"></span>`;
+            })()
+          : '';
+      const expDt = r.expectedISO ? parseLocalYMD(r.expectedISO) : null;
+      const metDt = r.metISO ? parseLocalYMD(r.metISO) : null;
+      const mrkCls = r.variance.tone === 'risk' ? 'risk' : '';
+      const actMarker = metDt
+        ? `<span class="ga-rm-actual-marker ${mrkCls}" style="left:${posLeft(metDt)}" title="Met"></span>`
+        : '';
+      return `<div class="ga-rm-row">
+      <div class="ga-rm-label">${escapeHtmlGa(r.level)} · <strong>${escapeHtmlGa(r.title)}</strong><small>${escapeHtmlGa(r.level === 'L2' ? `Roll-up · ${r.l1}` : `${r.taskCount} tasks`)}</small></div>
+      <div class="ga-rm-track-wrap"><div class="ga-rm-track">${plannedBar}
+        ${expDt ? `<span class="ga-rm-expected-marker" style="left:${posLeft(expDt)}" title="Expected"></span>` : ''}${actMarker}
+      </div></div>
+    </div>`;
+    })
+    .join('')}`;
+  tbody.innerHTML = enriched
+    .map((r) => {
+      const planBand =
+        r.plannedStart && r.agg?.maxPe
+          ? `${fmtD(r.plannedStart)} → ${fmtD(r.agg.maxPe)}`
+          : r.plannedIso || '—';
+      const varClr =
+        r.variance.tone === 'risk'
+          ? 'style="font-weight:700;color:var(--R)"'
+          : 'style="color:var(--G)"';
+      const midAttr = milestoneAttr(r.id);
+      const rowLabel =
+        r.level === 'L2' ? `${r.title} (${r.l1})` : `${r.title}`;
+      return `<tr>
+      <td><span class="bdg ${r.level === 'L1' ? 'bgp' : 'bgs'}">${escapeHtmlGa(r.level)}</span></td>
+      <td>${escapeHtmlGa(rowLabel)}</td>
+      <td style="font-size:11px;color:var(--t3)">${escapeHtmlGa(planBand)}</td>
+      <td><input type="date" data-roadmap-milestone="${midAttr}" data-roadmap-field="expectedEnd" value="${escapeHtmlGa(r.expectedISO || '')}" aria-label="Expected end"/></td>
+      <td><input type="date" data-roadmap-milestone="${midAttr}" data-roadmap-field="metDate" value="${escapeHtmlGa(r.metISO || '')}" aria-label="Met date"/></td>
+      <td ${varClr}>${escapeHtmlGa(r.variance.text)}</td>
+      <td style="font-weight:700">${r.rollupPct}%</td>
+      <td>${escapeHtmlGa(r.state)}</td>
+    </tr>`;
+    })
+    .join('');
 }
 
 /* ═══════════════════════════════════════════════
@@ -1739,6 +2113,7 @@ export function mountGADashboardV4() {
   window.downloadWorkTreeTemplate = downloadWorkTreeTemplate;
   window.drillProject = drillProject;
   window.toggleCat = toggleCat;
+  window.toggleActivityNode = toggleActivityNode;
 
   const onProjTab = (e) => {
     const btn = e.target.closest('.tab');
@@ -1790,10 +2165,27 @@ export function mountGADashboardV4() {
   const utEl = document.getElementById('uploadTabBar');
   const cfEl = document.getElementById('catFilter');
   const wbEl = document.getElementById('win-btns');
+  const rmEl = document.getElementById('pane-roadmap');
+  const onRoadmapChange = (e) => {
+    const inp = e.target?.closest?.('input[data-roadmap-milestone]');
+    if (!inp || inp.type !== 'date') return;
+    const raw = inp.getAttribute('data-roadmap-milestone');
+    if (!raw) return;
+    let id;
+    try {
+      id = decodeURIComponent(raw);
+    } catch {
+      return;
+    }
+    const fld = inp.getAttribute('data-roadmap-field');
+    if (!id || (fld !== 'expectedEnd' && fld !== 'metDate')) return;
+    setRoadmapField(id, fld, inp.value);
+  };
   if (ptEl) ptEl.addEventListener('click', onProjTab);
   if (utEl) utEl.addEventListener('click', onUploadTab);
   if (cfEl) cfEl.addEventListener('change', onCatFilter);
   if (wbEl) wbEl.addEventListener('click', onWinBtns);
+  if (rmEl) rmEl.addEventListener('change', onRoadmapChange);
 
   let winResizeT = null;
   const onWinResize = () => {
@@ -1803,6 +2195,7 @@ export function mountGADashboardV4() {
   window.addEventListener('resize', onWinResize);
 
   tryRestorePersistedImport();
+  updateRoadmapMongoHint();
   updateRuntimeMeta();
   syncTreeSelectors();
   applyTreeSelectionToDashboard();
@@ -1817,6 +2210,7 @@ export function mountGADashboardV4() {
     if (utEl) utEl.removeEventListener('click', onUploadTab);
     if (cfEl) cfEl.removeEventListener('change', onCatFilter);
     if (wbEl) wbEl.removeEventListener('click', onWinBtns);
+    if (rmEl) rmEl.removeEventListener('change', onRoadmapChange);
     window.removeEventListener('resize', onWinResize);
     Object.keys(R).forEach((k) => {
       try {
@@ -1840,6 +2234,7 @@ export function mountGADashboardV4() {
     delete window.downloadWorkTreeTemplate;
     delete window.drillProject;
     delete window.toggleCat;
+    delete window.toggleActivityNode;
     rendered.clear();
   };
 }

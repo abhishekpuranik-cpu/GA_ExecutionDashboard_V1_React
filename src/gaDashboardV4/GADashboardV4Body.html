@@ -124,6 +124,7 @@
   <div class="tabs" id="projTabBar">
     <button class="tab active" data-pane="progress">Construction Progress</button>
     <button class="tab" data-pane="schedule">Schedule &amp; Delays</button>
+    <button class="tab" data-pane="roadmap">Roadmap</button>
     <button class="tab" data-pane="ops">Operational KPIs</button>
     <button class="tab" data-pane="performance">Performance Board</button>
     <button class="tab" data-pane="finance">Construction Finance ★</button>
@@ -174,6 +175,21 @@
     <div class="g22">
       <div class="sec"><div class="sh"><span class="st">Top 15 most delayed tasks</span></div><table class="tbl"><thead><tr><th>Task</th><th>Category</th><th>Delay</th><th>Status</th><th>%</th></tr></thead><tbody id="delay-body"></tbody></table></div>
       <div class="sec"><div class="sh"><span class="st">Slab programme</span></div><div id="slab-list"></div><div class="sh" style="margin-top:16px"><span class="st">RFI aging ★</span><span class="dtag d">Dummy</span></div><div class="cw sm"><canvas id="rfiChart"></canvas></div><div class="m3" style="margin-top:8px"><div class="mn"><div class="mv">23</div><div class="ml">Open RFIs</div></div><div class="mn"><div class="mv">8</div><div class="ml">Aging &gt;5d</div></div><div class="mn"><div class="mv">4.2d</div><div class="ml">Avg resolution</div></div></div></div>
+    </div>
+  </div>
+
+  <!-- ROADMAP PANE -->
+  <div id="pane-roadmap" class="pane">
+    <div class="abar g">📌 <strong>Journey roadmap</strong> — L1 / L2 roll-up from imported tasks (or demo schedule when no extract). Adjust <strong>Expected end</strong> and <strong>Met date</strong> below; edits sync to MongoDB via the same storage as imports (<code>/api/ga-v4-import</code> + Saved dashboards).</div>
+    <div class="sec green">
+      <div class="sh"><span class="st">Interactive timeline · variance vs baseline</span><span class="dtag i">Live + MongoDB</span></div>
+      <div id="roadmap-mongo-hint" style="font-size:11px;color:var(--t3);margin-bottom:10px;line-height:1.45"></div>
+      <div id="roadmap-legend" class="ga-roadmap-leg"></div>
+      <div id="roadmap-visual" class="ga-roadmap-visual" aria-hidden="false"></div>
+    </div>
+    <div class="sec navy">
+      <div class="sh"><span class="st">Milestone ledger</span></div>
+      <table class="tbl ga-roadmap-tbl"><thead><tr><th>WBS</th><th>Milestone</th><th>Rolled plan (tasks)</th><th>Expected end</th><th>Met / actual</th><th>Variance</th><th>Roll-up %</th><th>State</th></tr></thead><tbody id="roadmap-body"></tbody></table>
     </div>
   </div>
 
